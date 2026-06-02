@@ -124,16 +124,16 @@ export function PublicHeader() {
             )}
           </nav>
 
-          <div className="flex items-center gap-1 md:hidden">
-            <Link to="/favoritos" className="relative p-2 text-slate-400 hover:text-rose-500 transition-colors">
+          <div className="flex items-center gap-2 md:hidden">
+            <Link to="/favoritos" className="relative p-2.5 text-slate-400 hover:text-rose-500 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
               <Heart className={cn('h-6 w-6', favorites.length > 0 ? 'fill-rose-500 text-rose-500' : '')} />
               {favorites.length > 0 && (
-                <span className="absolute top-1 right-1 h-3.5 w-3.5 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                <span className="absolute top-1.5 right-1.5 h-3.5 w-3.5 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                   {favorites.length}
                 </span>
               )}
             </Link>
-            <button type="button" onClick={() => setIsMenuOpen(true)} className="p-2 text-slate-600 hover:text-orange-600 transition-colors">
+            <button type="button" onClick={() => setIsMenuOpen(true)} className="p-2.5 text-slate-600 hover:text-orange-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
               <Menu className="h-6 w-6" />
             </button>
           </div>
@@ -224,23 +224,23 @@ export function PublicHeader() {
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-100 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="flex items-center justify-around py-2">
-          <Link to="/" className={cn('flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-colors', location.pathname === '/' ? 'text-orange-600' : 'text-slate-400')}>
+        <div className="flex items-center justify-around py-1">
+          <Link to="/" className={cn('flex flex-col items-center gap-1 px-6 py-2.5 rounded-xl transition-colors min-h-[44px] justify-center', location.pathname === '/' ? 'text-orange-600' : 'text-slate-400')}>
             <Home className="h-5 w-5" />
-            <span className="text-[9px] font-bold uppercase tracking-wide">Início</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide">Início</span>
           </Link>
-          <Link to="/imoveis" className={cn('flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-colors', location.pathname.startsWith('/imoveis') ? 'text-orange-600' : 'text-slate-400')}>
+          <Link to="/imoveis" className={cn('flex flex-col items-center gap-1 px-6 py-2.5 rounded-xl transition-colors min-h-[44px] justify-center', location.pathname.startsWith('/imoveis') ? 'text-orange-600' : 'text-slate-400')}>
             <Search className="h-5 w-5" />
-            <span className="text-[9px] font-bold uppercase tracking-wide">Buscar</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide">Buscar</span>
           </Link>
-          <Link to="/favoritos" className={cn('flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-colors relative', location.pathname === '/favoritos' ? 'text-rose-500' : 'text-slate-400')}>
+          <Link to="/favoritos" className={cn('flex flex-col items-center gap-1 px-6 py-2.5 rounded-xl transition-colors min-h-[44px] justify-center relative', location.pathname === '/favoritos' ? 'text-rose-500' : 'text-slate-400')}>
             <Heart className={cn('h-5 w-5', favorites.length > 0 ? 'fill-rose-500 text-rose-500' : '')} />
             {favorites.length > 0 && (
-              <span className="absolute top-0.5 right-2.5 h-3.5 w-3.5 bg-rose-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+              <span className="absolute top-2 right-3 h-4 w-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                 {favorites.length}
               </span>
             )}
-            <span className="text-[9px] font-bold uppercase tracking-wide">Salvos</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide">Salvos</span>
           </Link>
         </div>
       </nav>

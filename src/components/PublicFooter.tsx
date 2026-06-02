@@ -7,7 +7,7 @@ export function PublicFooter() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-slate-950 text-white pt-16 pb-8 border-t-4 border-orange-500 relative overflow-hidden">
+    <footer className="bg-slate-950 text-white pt-16 pb-24 md:pb-8 border-t-4 border-orange-500 relative overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/50 to-transparent" />
       <div className="absolute top-0 right-0 w-96 h-96 bg-orange-600 rounded-full blur-[120px] opacity-10 pointer-events-none translate-x-1/2 -translate-y-1/2" />
 
@@ -51,11 +51,11 @@ export function PublicFooter() {
               Links
               <span className="absolute -bottom-1.5 left-0 w-6 h-0.5 bg-orange-500 rounded-full" />
             </h4>
-            <ul className="space-y-3.5 text-slate-400 text-sm">
-              <li><Link to="/" className="hover:text-orange-400 transition-colors font-medium">Início</Link></li>
-              <li><Link to="/imoveis" className="hover:text-orange-400 transition-colors font-medium">Imóveis</Link></li>
-              <li><Link to="/blog" className="hover:text-orange-400 transition-colors font-medium">Blog</Link></li>
-              <li><Link to="/favoritos" className="hover:text-orange-400 transition-colors font-medium">Favoritos</Link></li>
+            <ul className="space-y-1 text-slate-400 text-sm">
+              <li><Link to="/" className="block py-2 hover:text-orange-400 transition-colors font-medium">Início</Link></li>
+              <li><Link to="/imoveis" className="block py-2 hover:text-orange-400 transition-colors font-medium">Imóveis</Link></li>
+              <li><Link to="/blog" className="block py-2 hover:text-orange-400 transition-colors font-medium">Blog</Link></li>
+              <li><Link to="/favoritos" className="block py-2 hover:text-orange-400 transition-colors font-medium">Favoritos</Link></li>
             </ul>
           </div>
 

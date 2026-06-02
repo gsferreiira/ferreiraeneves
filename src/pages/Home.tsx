@@ -113,7 +113,7 @@ export default function Home() {
 
             {/* Left: texto + search */}
             <div className="flex-1 w-full flex flex-col items-center lg:items-start text-center lg:text-left space-y-8 mt-4 md:mt-0">
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-[5.5rem] font-heading font-extrabold text-slate-900 tracking-tighter leading-[1.05] animate-fade-up">
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl xl:text-[5.5rem] font-heading font-extrabold text-slate-900 tracking-tighter leading-[1.05] animate-fade-up">
                 O imóvel certo
                 <br />
                 muda a sua{' '}
@@ -190,7 +190,7 @@ export default function Home() {
 
                   {/* Filtros avançados */}
                   {advancedOpen && (
-                    <div className="border-t border-slate-100 pt-3 grid grid-cols-2 gap-2">
+                    <div className="border-t border-slate-100 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Quartos</label>
                         <Select value={quartos || 'todos'} onValueChange={v => setQuartos(v === 'todos' ? '' : v)}>
@@ -235,7 +235,7 @@ export default function Home() {
                           onChange={e => setPrecoMin(e.target.value)}
                           className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-200 transition-all" />
                       </div>
-                      <div className="col-span-2">
+                      <div className="sm:col-span-2">
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Preço máx. (R$)</label>
                         <input type="number" min={0} placeholder="Sem limite"
                           value={precoMax}
@@ -356,12 +356,12 @@ export default function Home() {
             <p className="text-base text-slate-500">Explore os bairros mais desejados de Curitiba.</p>
           </FadeIn>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-5 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0">
             {bairrosDestaque.map((bairro, i) => (
-              <FadeIn key={i} delay={i * 80}>
+              <FadeIn key={i} delay={i * 80} className="shrink-0 w-[72vw] sm:w-auto snap-start">
                 <button
                   type="button"
-                  className="group relative h-72 w-full rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 text-left"
+                  className="group relative h-60 sm:h-72 w-full rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 text-left"
                   onClick={() => navigate(`/imoveis?busca=${encodeURIComponent(bairro.nome)}`)}
                 >
                   <img src={bairro.img} alt={bairro.nome} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />

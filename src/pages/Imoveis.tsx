@@ -114,8 +114,8 @@ export default function Imoveis() {
           )}
         </div>
 
-        {/* Barra de ordenação sempre visível */}
-        <div className="flex items-center justify-end gap-2 text-xs">
+        {/* Ordenação — visível apenas em sm+; em mobile fica dentro dos filtros */}
+        <div className="hidden sm:flex items-center justify-end gap-2 text-xs">
           <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
           <span className="text-slate-500 font-medium">Ordenar:</span>
           <Select
@@ -137,6 +137,18 @@ export default function Imoveis() {
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Filtros avançados</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {/* Ordenação visível apenas no mobile (sm+ usa a barra separada) */}
+              <div className="col-span-2 sm:hidden">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Ordenar por</label>
+                <Select value={filtros.ordem ?? 'recente'} onValueChange={v => setFiltros(f => ({ ...f, ordem: v === 'recente' ? undefined : v as ImovelOrdem }))}>
+                  <SelectTrigger className="h-10 rounded-xl border-slate-200 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recente">{ORDEM_LABEL.recente}</SelectItem>
+                    <SelectItem value="preco_asc">{ORDEM_LABEL.preco_asc}</SelectItem>
+                    <SelectItem value="preco_desc">{ORDEM_LABEL.preco_desc}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Negócio</label>
                 <Select value={filtros.tipo_negocio ?? 'todos'} onValueChange={v => setFiltros(f => ({ ...f, tipo_negocio: v === 'todos' ? undefined : v }))}>

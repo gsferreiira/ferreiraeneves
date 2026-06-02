@@ -146,7 +146,8 @@ export default function ImovelDetail() {
   function onTouchEnd(e: React.TouchEvent) {
     if (touchStartX.current === null) return
     const diff = touchStartX.current - e.changedTouches[0].clientX
-    if (Math.abs(diff) > 50) diff > 0 ? next(fotos.length) : prev(fotos.length)
+    // Threshold de 60px evita fechamento acidental do lightbox em swipes curtos
+    if (Math.abs(diff) > 60) diff > 0 ? next(fotos.length) : prev(fotos.length)
     touchStartX.current = null
   }
 
@@ -278,7 +279,7 @@ export default function ImovelDetail() {
               <ChevronLeft className="h-5 w-5 text-slate-700" />
             </button>
             <button onClick={e => { e.stopPropagation(); next(fotos.length) }}
-              className="absolute right-12 sm:right-3 top-1/2 -translate-y-1/2 h-9 w-9 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors">
+              className="absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors">
               <ChevronRight className="h-5 w-5 text-slate-700" />
             </button>
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 pointer-events-none">
@@ -327,7 +328,7 @@ export default function ImovelDetail() {
 
       {/* Miniaturas */}
       {fotos.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-1 mb-6 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
           {fotos.map((f, i) => (
             <button key={i} onClick={() => { setFotoIdx(i); setLightbox(true) }}
               className={cn('shrink-0 h-14 w-20 sm:h-16 sm:w-24 rounded-xl overflow-hidden border-2 transition-all',
@@ -343,7 +344,7 @@ export default function ImovelDetail() {
       <div className="grid md:grid-cols-3 gap-6 md:gap-8">
 
         {/* ── Sidebar ── */}
-        <div className="md:col-span-1 order-first md:order-last space-y-4">
+        <div className="md:col-span-1 order-last md:order-last space-y-4">
 
           {/* Corretor */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
@@ -419,7 +420,7 @@ export default function ImovelDetail() {
         </div>
 
         {/* ── Conteúdo principal ── */}
-        <div className="md:col-span-2 order-last md:order-first space-y-6">
+        <div className="md:col-span-2 order-first md:order-first space-y-6">
 
           {/* Badges + título + endereço */}
           <div>
@@ -443,7 +444,7 @@ export default function ImovelDetail() {
           {/* Preços */}
           <div className="flex flex-wrap gap-4">
             {!!imovel.preco_venda && (
-              <div className="flex-1 min-w-[180px] bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl px-6 py-5 shadow-lg shadow-orange-500/20">
+              <div className="flex-1 min-w-[140px] bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl px-6 py-5 shadow-lg shadow-orange-500/20">
                 <p className="text-xs font-bold text-orange-200 uppercase tracking-widest mb-1.5">Valor de Venda</p>
                 <p className="text-4xl font-extrabold text-white font-heading tracking-tight leading-none">
                   {formatCurrency(imovel.preco_venda)}
@@ -451,7 +452,7 @@ export default function ImovelDetail() {
               </div>
             )}
             {!!imovel.preco_locacao && (
-              <div className="flex-1 min-w-[180px] bg-white border-2 border-slate-200 rounded-2xl px-6 py-5">
+              <div className="flex-1 min-w-[140px] bg-white border-2 border-slate-200 rounded-2xl px-6 py-5">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Aluguel / mês</p>
                 <p className="text-4xl font-extrabold text-slate-900 font-heading tracking-tight leading-none">
                   {formatCurrency(imovel.preco_locacao)}
