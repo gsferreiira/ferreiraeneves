@@ -41,6 +41,19 @@ export function generateCodigo(): string {
   return `FN-${Date.now().toString(36).toUpperCase()}`
 }
 
+export function getYouTubeEmbedUrl(url: string): string | null {
+  if (!url) return null
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{11})/,
+    /youtube\.com\/.*[?&]v=([\w-]{11})/,
+  ]
+  for (const re of patterns) {
+    const m = url.match(re)
+    if (m) return `https://www.youtube.com/embed/${m[1]}`
+  }
+  return null
+}
+
 export const TIPO_IMOVEL_LABELS: Record<string, string> = {
   casa: 'Casa',
   apartamento: 'Apartamento',

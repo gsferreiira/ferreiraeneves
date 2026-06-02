@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase, IMOVEIS_BUCKET } from './supabase'
-import type { Imovel, Proprietario, Contrato, Agendamento, Configuracoes, ImovelFiltros } from '@/types'
+import type { Imovel, Proprietario, Contrato, Agendamento, Configuracoes, ImovelFiltros, AuditLog } from '@/types'
 
 // ─── Imóveis ────────────────────────────────────────────────────────────────
 
@@ -12,8 +12,6 @@ export function useImoveis(filtros?: ImovelFiltros) {
         .from('imoveis')
         .select('*, proprietario:proprietarios(id,nome,telefone)')
         .eq('status', 'disponivel')
-        .order('destaque', { ascending: false })
-        .order('created_at', { ascending: false })
 
       if (filtros?.tipo_imovel) q = q.eq('tipo_imovel', filtros.tipo_imovel)
       if (filtros?.tipo_negocio) q = q.eq('tipo_negocio', filtros.tipo_negocio)
@@ -23,6 +21,17 @@ export function useImoveis(filtros?: ImovelFiltros) {
       if (filtros?.preco_max) q = q.lte('preco_venda', filtros.preco_max)
       if (filtros?.busca) {
         q = q.or(`titulo.ilike.%${filtros.busca}%,bairro.ilike.%${filtros.busca}%,cidade.ilike.%${filtros.busca}%`)
+      }
+
+      switch (filtros?.ordem) {
+        case 'preco_asc':
+          q = q.order('preco_venda', { ascending: true, nullsFirst: false })
+          break
+        case 'preco_desc':
+          q = q.order('preco_venda', { ascending: false, nullsFirst: false })
+          break
+        default:
+          q = q.order('destaque', { ascending: false }).order('created_at', { ascending: false })
       }
 
       const { data, error } = await q
@@ -62,6 +71,24 @@ export function useImovel(id: string) {
       return data as Imovel
     },
     enabled: !!id,
+  })
+}
+
+// Busca por lista de IDs (usado em Favoritos — mostra mesmo se status mudar)
+export function useImoveisByIds(ids: string[]) {
+  return useQuery({
+    queryKey: ['imoveis', 'by-ids', ids.slice().sort()],
+    queryFn: async () => {
+      if (ids.length === 0) return []
+      const { data, error } = await supabase
+        .from('imoveis')
+        .select('*')
+        .in('id', ids)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return data as Imovel[]
+    },
+    enabled: ids.length > 0,
   })
 }
 
@@ -333,6 +360,26 @@ export function useUpdateConfiguracoes() {
       return data as Configuracoes
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['configuracoes'] }),
+  })
+}
+
+// ─── Auditoria ──────────────────────────────────────────────────────────────
+
+export function useAuditLog({ tabela, acao, limit = 100 }: { tabela?: string; acao?: string; limit?: number }) {
+  return useQuery({
+    queryKey: ['audit_log', tabela, acao, limit],
+    queryFn: async () => {
+      let q = supabase
+        .from('audit_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      if (tabela && tabela !== 'todas') q = q.eq('tabela', tabela)
+      if (acao && acao !== 'todas') q = q.eq('acao', acao)
+      const { data, error } = await q
+      if (error) throw error
+      return data as AuditLog[]
+    },
   })
 }
 

@@ -4,6 +4,7 @@ import {
   ArrowRight, Search, ShieldCheck, Mail, Send,
   Map, Star, FileSearch, Megaphone, PhoneCall, BriefcaseBusiness,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { PropertyCard } from '@/components/PropertyCard'
 import { FadeIn } from '@/components/FadeIn'
 import { AnimatedCounter } from '@/components/AnimatedCounter'
@@ -56,6 +57,22 @@ export default function Home() {
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const whatsapp = config?.whatsapp?.replace(/\D/g, '') ?? ''
+    const email = config?.email ?? ''
+
+    if (whatsapp) {
+      const texto = `Olá! Sou *${eNome}* (${eEmail}).\n*Assunto:* ${eAssunto || 'Contato'}\n\n${eMensagem}`
+      window.open(`https://wa.me/55${whatsapp}?text=${encodeURIComponent(texto)}`, '_blank', 'noopener,noreferrer')
+      toast.success('Abrindo WhatsApp para envio…')
+    } else if (email) {
+      const subject = encodeURIComponent(eAssunto || 'Contato pelo site')
+      const body = encodeURIComponent(`Nome: ${eNome}\nE-mail: ${eEmail}\n\n${eMensagem}`)
+      window.location.href = `mailto:${email}?subject=${subject}&body=${body}`
+      toast.success('Abrindo seu cliente de e-mail…')
+    } else {
+      toast.error('Configure WhatsApp ou e-mail nas Configurações.')
+      return
+    }
     setENome(''); setEEmail(''); setEAssunto(''); setEMensagem('')
   }
 

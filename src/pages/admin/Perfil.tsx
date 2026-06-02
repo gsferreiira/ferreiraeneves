@@ -4,7 +4,7 @@ import {
   Camera, UserCircle, Mail, Key, Phone, Loader2, LogOut,
   Save, CheckCircle2, Eye, EyeOff, Shield, Globe,
 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import { supabase, ASSETS_BUCKET } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'

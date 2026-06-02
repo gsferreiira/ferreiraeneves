@@ -2,11 +2,26 @@ import { useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Home, FileText, UserCheck, CalendarDays,
-  LogOut, Bell, Menu, X, UserCircle, Globe, Users,
+  LogOut, Bell, Menu, X, UserCircle, Globe, Users, Calendar, FileText as ContratoIcon, History,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
+import { useNotificacoes, type Notificacao } from '@/hooks/useNotificacoes'
 import { cn } from '@/lib/utils'
+
+const AVATAR_SIZES = { sm: 'h-8 w-8 text-sm', md: 'h-9 w-9 text-sm', lg: 'h-12 w-12 text-lg' } as const
+
+function Avatar({ size = 'md', nome, fotoUrl }: { size?: 'sm' | 'md' | 'lg'; nome: string; fotoUrl?: string }) {
+  const primeiraLetra = nome.charAt(0).toUpperCase()
+  return (
+    <div className={cn('rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center font-bold text-white shadow-sm overflow-hidden shrink-0', AVATAR_SIZES[size])}>
+      {fotoUrl
+        ? <img src={fotoUrl} alt={nome} className="w-full h-full object-cover" />
+        : primeiraLetra
+      }
+    </div>
+  )
+}
 
 const navGroups = [
   {
@@ -28,21 +43,29 @@ const navGroups = [
     label: 'Configurações',
     items: [
       { label: 'Equipe', icon: Users, path: '/admin/equipe' },
+      { label: 'Histórico', icon: History, path: '/admin/historico' },
     ],
   },
 ]
+
+function NotificacaoIcon({ tipo }: { tipo: Notificacao['tipo'] }) {
+  if (tipo === 'contrato_vencendo') return <ContratoIcon className="h-4 w-4 text-amber-600" />
+  if (tipo === 'agendamento_hoje') return <Calendar className="h-4 w-4 text-emerald-600" />
+  return <Calendar className="h-4 w-4 text-blue-600" />
+}
 
 export function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [notificacoesOpen, setNotificacoesOpen] = useState(false)
   const { signOut, user } = useAuth()
+  const notificacoes = useNotificacoes()
 
   const meta = user?.user_metadata ?? {}
   const nome = (meta.nome as string) || user?.email?.split('@')[0] || 'Admin'
   const fotoUrl = meta.foto_url as string | undefined
-  const primeiraLetra = nome.charAt(0).toUpperCase()
 
   const handleLogout = async () => {
     await signOut()
@@ -69,18 +92,6 @@ export function AdminLayout() {
         <item.icon className="h-4 w-4 shrink-0" />
         {item.label}
       </Link>
-    )
-  }
-
-  const Avatar = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
-    const sizes = { sm: 'h-8 w-8 text-sm', md: 'h-9 w-9 text-sm', lg: 'h-12 w-12 text-lg' }
-    return (
-      <div className={cn('rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center font-bold text-white shadow-sm overflow-hidden shrink-0', sizes[size])}>
-        {fotoUrl
-          ? <img src={fotoUrl} alt={nome} className="w-full h-full object-cover" />
-          : primeiraLetra
-        }
-      </div>
     )
   }
 
@@ -132,7 +143,7 @@ export function AdminLayout() {
                 : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-100',
             )}
           >
-            <Avatar size="sm" />
+            <Avatar size="sm" nome={nome} fotoUrl={fotoUrl} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate leading-tight">{nome}</p>
               <p className="text-[10px] text-slate-500 truncate">Meu Perfil</p>
@@ -166,10 +177,61 @@ export function AdminLayout() {
           </div>
 
           <div className="flex items-center gap-3 ml-auto">
-            {/* Sino */}
-            <button className="p-2 rounded-xl text-slate-400 hover:text-orange-500 hover:bg-orange-50 transition-colors">
-              <Bell className="h-5 w-5" />
-            </button>
+            {/* Sino + dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setNotificacoesOpen(v => !v)}
+                className="p-2 rounded-xl text-slate-400 hover:text-orange-500 hover:bg-orange-50 transition-colors relative"
+                aria-label="Notificações"
+              >
+                <Bell className="h-5 w-5" />
+                {notificacoes.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                    {notificacoes.length > 9 ? '9+' : notificacoes.length}
+                  </span>
+                )}
+              </button>
+              {notificacoesOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setNotificacoesOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-40 animate-scale-in">
+                    <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                      <p className="font-bold text-sm text-slate-900">Notificações</p>
+                      <span className="text-[10px] font-bold text-slate-400">{notificacoes.length}</span>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      {notificacoes.length === 0 ? (
+                        <div className="text-center py-10 px-4">
+                          <Bell className="h-8 w-8 mx-auto text-slate-200 mb-2" />
+                          <p className="text-sm text-slate-400 font-medium">Sem notificações</p>
+                        </div>
+                      ) : (
+                        notificacoes.map(n => (
+                          <button
+                            key={n.id}
+                            onClick={() => { navigate(n.link); setNotificacoesOpen(false) }}
+                            className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 flex items-start gap-3"
+                          >
+                            <div className={cn(
+                              'h-9 w-9 rounded-xl flex items-center justify-center shrink-0',
+                              n.tipo === 'contrato_vencendo' ? 'bg-amber-50' :
+                              n.tipo === 'agendamento_hoje' ? 'bg-emerald-50' : 'bg-blue-50',
+                            )}>
+                              <NotificacaoIcon tipo={n.tipo} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-slate-900 text-sm truncate">{n.titulo}</p>
+                              <p className="text-xs text-slate-500 truncate">{n.descricao}</p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* Ver site */}
             <button
@@ -192,7 +254,7 @@ export function AdminLayout() {
                   <p className="text-sm font-bold text-slate-900 leading-none">{nome}</p>
                   <p className="text-xs text-slate-400 mt-0.5">Admin</p>
                 </div>
-                <Avatar size="md" />
+                <Avatar size="md" nome={nome} fotoUrl={fotoUrl} />
               </button>
 
               {profileOpen && (
@@ -200,7 +262,7 @@ export function AdminLayout() {
                   {/* Cabeçalho dropdown */}
                   <div className="p-4 border-b border-slate-100 bg-slate-50">
                     <div className="flex items-center gap-3">
-                      <Avatar size="md" />
+                      <Avatar size="md" nome={nome} fotoUrl={fotoUrl} />
                       <div className="min-w-0">
                         <p className="font-bold text-slate-900 text-sm truncate">{nome}</p>
                         <p className="text-xs text-slate-400 truncate">{user?.email}</p>

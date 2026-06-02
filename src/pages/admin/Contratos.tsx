@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { useContratos, useCreateContrato, useUpdateContrato, useDeleteContrato, useImoveisAdmin, useProprietarios } from '@/lib/queries'
+import { useIsAdmin } from '@/hooks/useIsAdmin'
 import type { Contrato } from '@/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -37,6 +38,7 @@ export default function AdminContratos() {
   const createContrato = useCreateContrato()
   const updateContrato = useUpdateContrato()
   const deleteContrato = useDeleteContrato()
+  const isAdmin = useIsAdmin()
 
   const [busca, setBusca] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -137,7 +139,7 @@ export default function AdminContratos() {
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-orange-600" onClick={() => abrirEditar(c)}><Edit2 className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => setConfirmarDelete({ id: c.id, nome: c.nome_cliente })}><Trash2 className="h-4 w-4" /></Button>
+                        {isAdmin && <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => setConfirmarDelete({ id: c.id, nome: c.nome_cliente })}><Trash2 className="h-4 w-4" /></Button>}
                       </div>
                     </td>
                   </tr>

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { useAgendamentos, useCreateAgendamento, useUpdateAgendamento, useDeleteAgendamento, useImoveisAdmin } from '@/lib/queries'
+import { useIsAdmin } from '@/hooks/useIsAdmin'
 import { formatDateTime } from '@/lib/utils'
 import type { Agendamento } from '@/types'
 import { toast } from 'sonner'
@@ -47,6 +48,7 @@ export default function AdminAgendamentos() {
   const createAgendamento = useCreateAgendamento()
   const updateAgendamento = useUpdateAgendamento()
   const deleteAgendamento = useDeleteAgendamento()
+  const isAdmin = useIsAdmin()
 
   const [view, setView] = useState<View>('calendario')
   const [busca, setBusca] = useState('')
@@ -313,9 +315,11 @@ export default function AdminAgendamentos() {
                             <Star className="h-3.5 w-3.5" />
                           </button>
                         )}
-                        <button onClick={() => setConfirmarDelete({ id: ag.id, nome: ag.nome_cliente })} className="h-8 w-8 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        {isAdmin && (
+                          <button onClick={() => setConfirmarDelete({ id: ag.id, nome: ag.nome_cliente })} className="h-8 w-8 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

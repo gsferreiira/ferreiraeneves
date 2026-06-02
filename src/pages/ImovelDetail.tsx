@@ -7,8 +7,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useImovel, useCreateAgendamento, useConfiguracoes } from '@/lib/queries'
-import { useFavorites } from '@/contexts/FavoritesContext'
-import { formatCurrency, TIPO_IMOVEL_LABELS, TIPO_NEGOCIO_LABELS } from '@/lib/utils'
+import { useFavorites } from '@/hooks/useFavorites'
+import { useDocumentMeta } from '@/hooks/useDocumentMeta'
+import { formatCurrency, TIPO_IMOVEL_LABELS, TIPO_NEGOCIO_LABELS, getYouTubeEmbedUrl } from '@/lib/utils'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -20,6 +21,14 @@ export default function ImovelDetail() {
   const createAgendamento = useCreateAgendamento()
   const [fotoIdx, setFotoIdx] = useState(0)
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_hora: '' })
+  const [honeypot, setHoneypot] = useState('')
+  const formOpenAtRef = useState(() => Date.now())[0]
+
+  useDocumentMeta({
+    title: imovel?.titulo,
+    description: imovel?.descricao?.slice(0, 160) ?? (imovel ? `${imovel.titulo} em ${imovel.cidade}` : undefined),
+    image: imovel?.fotos?.[0],
+  })
 
   if (isLoading) {
     return (
@@ -47,6 +56,10 @@ export default function ImovelDetail() {
 
   async function handleAgendamento(e: React.FormEvent) {
     e.preventDefault()
+    // Honeypot: bots geralmente preenchem todos os campos
+    if (honeypot) return
+    // Tempo mínimo de preenchimento para descartar submissões automáticas
+    if (Date.now() - formOpenAtRef < 1500) return
     if (!form.nome || !form.telefone || !form.data_hora) {
       toast.error('Preencha nome, telefone e data/hora')
       return
@@ -169,6 +182,16 @@ export default function ImovelDetail() {
               Agendar Visita
             </h2>
             <form onSubmit={handleAgendamento} className="space-y-3">
+              {/* honeypot — invisível para humanos */}
+              <input
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={honeypot}
+                onChange={e => setHoneypot(e.target.value)}
+                className="absolute opacity-0 pointer-events-none h-0 w-0"
+                aria-hidden="true"
+              />
               {[
                 { id: 'nome', label: 'Nome *', type: 'text', placeholder: 'Seu nome', key: 'nome' as const, required: true },
                 { id: 'tel', label: 'Telefone *', type: 'tel', placeholder: '(00) 00000-0000', key: 'telefone' as const, required: true },
@@ -284,12 +307,12 @@ export default function ImovelDetail() {
           )}
 
           {/* Vídeo */}
-          {imovel.video_url && (
+          {imovel.video_url && getYouTubeEmbedUrl(imovel.video_url) && (
             <div>
               <h2 className="font-heading font-bold text-slate-900 text-lg mb-3">Vídeo</h2>
               <div className="aspect-video rounded-2xl overflow-hidden bg-slate-100">
                 <iframe
-                  src={imovel.video_url.replace('watch?v=', 'embed/')}
+                  src={getYouTubeEmbedUrl(imovel.video_url) ?? ''}
                   className="w-full h-full"
                   allowFullScreen
                   title="Vídeo do imóvel"

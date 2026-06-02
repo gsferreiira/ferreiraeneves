@@ -1,12 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react'
-
-interface FavoritesContextValue {
-  favorites: string[]
-  toggle: (id: string) => void
-  isFavorite: (id: string) => boolean
-}
-
-const FavoritesContext = createContext<FavoritesContextValue | null>(null)
+import { useState, useEffect } from 'react'
+import { FavoritesContext } from '@/contexts/favorites-context'
 
 const STORAGE_KEY = 'fn_favorites'
 
@@ -36,10 +29,4 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       {children}
     </FavoritesContext.Provider>
   )
-}
-
-export function useFavorites() {
-  const ctx = useContext(FavoritesContext)
-  if (!ctx) throw new Error('useFavorites deve ser usado dentro de FavoritesProvider')
-  return ctx
 }

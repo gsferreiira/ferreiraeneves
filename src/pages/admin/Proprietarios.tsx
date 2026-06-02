@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { useProprietarios, useCreateProprietario, useUpdateProprietario, useDeleteProprietario } from '@/lib/queries'
+import { useIsAdmin } from '@/hooks/useIsAdmin'
 import type { Proprietario } from '@/types'
 import { toast } from 'sonner'
 
@@ -37,6 +38,7 @@ export default function AdminProprietarios() {
   const createProprietario = useCreateProprietario()
   const updateProprietario = useUpdateProprietario()
   const deleteProprietario = useDeleteProprietario()
+  const isAdmin = useIsAdmin()
 
   const [busca, setBusca] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -126,7 +128,7 @@ export default function AdminProprietarios() {
                 <div className="flex items-center gap-2 shrink-0">
                   {p.banco && <Badge variant="secondary" className="hidden sm:flex">🏦 {p.banco}</Badge>}
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-orange-600" onClick={e => { e.stopPropagation(); abrirEditar(p) }}><Edit2 className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={e => { e.stopPropagation(); setConfirmarDelete({ id: p.id, nome: p.nome }) }}><Trash2 className="h-4 w-4" /></Button>
+                  {isAdmin && <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={e => { e.stopPropagation(); setConfirmarDelete({ id: p.id, nome: p.nome }) }}><Trash2 className="h-4 w-4" /></Button>}
                   {expandido === p.id ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
                 </div>
               </div>

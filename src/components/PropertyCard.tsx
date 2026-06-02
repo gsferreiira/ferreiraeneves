@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bed, Bath, Maximize, MapPin, Heart, Car } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
-import { useFavorites } from '@/contexts/FavoritesContext'
+import { useFavorites } from '@/hooks/useFavorites'
 import { cn } from '@/lib/utils'
 import type { Imovel } from '@/types'
 

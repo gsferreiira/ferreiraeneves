@@ -105,6 +105,20 @@ export interface Usuario {
   created_at: string
 }
 
+export interface AuditLog {
+  id: number
+  tabela: string
+  registro_id: string | null
+  acao: 'INSERT' | 'UPDATE' | 'DELETE'
+  usuario_id: string | null
+  usuario_email: string | null
+  dados_anteriores: Record<string, unknown> | null
+  dados_novos: Record<string, unknown> | null
+  created_at: string
+}
+
+export type ImovelOrdem = 'recente' | 'preco_asc' | 'preco_desc'
+
 export type ImovelFiltros = {
   tipo_imovel?: string
   tipo_negocio?: string
@@ -113,4 +127,5 @@ export type ImovelFiltros = {
   preco_max?: number
   preco_min?: number
   busca?: string
+  ordem?: ImovelOrdem
 }
