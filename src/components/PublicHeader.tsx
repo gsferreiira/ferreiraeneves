@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X, MessageCircle, Heart, Home, Search } from 'lucide-react'
-import { useFavorites } from '@/contexts/FavoritesContext'
+import { useFavorites } from '@/hooks/useFavorites'
 import { useConfiguracoes } from '@/lib/queries'
 import { cn } from '@/lib/utils'
 

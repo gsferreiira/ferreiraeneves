@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { useAgendamentos, useCreateAgendamento, useUpdateAgendamento, useDeleteAgendamento, useImoveisAdmin } from '@/lib/queries'
+import { useIsAdmin } from '@/hooks/useIsAdmin'
 import { formatDateTime } from '@/lib/utils'
 import type { Agendamento } from '@/types'
 import { toast } from 'sonner'
@@ -47,6 +48,7 @@ export default function AdminAgendamentos() {
   const createAgendamento = useCreateAgendamento()
   const updateAgendamento = useUpdateAgendamento()
   const deleteAgendamento = useDeleteAgendamento()
+  const isAdmin = useIsAdmin()
 
   const [view, setView] = useState<View>('calendario')
   const [busca, setBusca] = useState('')
@@ -96,25 +98,37 @@ export default function AdminAgendamentos() {
       toast.error('Nome, telefone e data são obrigatórios'); return
     }
     const payload = { ...form, imovel_id: form.imovel_id || '' }
-    if (editando) {
-      await updateAgendamento.mutateAsync({ id: editando.id, ...payload })
-      toast.success('Agendamento atualizado')
-    } else {
-      await createAgendamento.mutateAsync(payload)
-      toast.success('Agendamento criado')
+    try {
+      if (editando) {
+        await updateAgendamento.mutateAsync({ id: editando.id, ...payload })
+        toast.success('Agendamento atualizado')
+      } else {
+        await createAgendamento.mutateAsync(payload)
+        toast.success('Agendamento criado')
+      }
+      setDialogOpen(false)
+    } catch {
+      toast.error('Erro ao salvar agendamento. Tente novamente.')
     }
-    setDialogOpen(false)
   }
 
   async function handleStatus(ag: Agendamento, status: Agendamento['status']) {
-    await updateAgendamento.mutateAsync({ id: ag.id, status })
-    toast.success(`${STATUS_LABEL[status]}`)
+    try {
+      await updateAgendamento.mutateAsync({ id: ag.id, status })
+      toast.success(`${STATUS_LABEL[status]}`)
+    } catch {
+      toast.error('Erro ao atualizar status.')
+    }
   }
 
   async function handleDelete() {
     if (!confirmarDelete) return
-    await deleteAgendamento.mutateAsync(confirmarDelete.id)
-    toast.success('Agendamento excluído')
+    try {
+      await deleteAgendamento.mutateAsync(confirmarDelete.id)
+      toast.success('Agendamento excluído')
+    } catch {
+      toast.error('Erro ao excluir agendamento.')
+    }
     setConfirmarDelete(null)
   }
 
@@ -313,9 +327,11 @@ export default function AdminAgendamentos() {
                             <Star className="h-3.5 w-3.5" />
                           </button>
                         )}
-                        <button onClick={() => setConfirmarDelete({ id: ag.id, nome: ag.nome_cliente })} className="h-8 w-8 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        {isAdmin && (
+                          <button onClick={() => setConfirmarDelete({ id: ag.id, nome: ag.nome_cliente })} className="h-8 w-8 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

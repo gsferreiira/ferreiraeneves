@@ -1,11 +1,28 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAuth } from '@/contexts/AuthContext'
+import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
 
 export function ProtectedRoute() {
   const { session, loading } = useAuth()
   const location = useLocation()
 
-  if (loading) {
+  const { data: perfil, isLoading: perfilLoading } = useQuery({
+    queryKey: ['perfil-status', session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) return null
+      const { data } = await supabase
+        .from('usuarios')
+        .select('status')
+        .eq('id', session.user.id)
+        .maybeSingle()
+      return data
+    },
+    enabled: !!session?.user?.id,
+    staleTime: 1000 * 60 * 5,
+  })
+
+  if (loading || (session && perfilLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-3">
@@ -17,7 +34,10 @@ export function ProtectedRoute() {
   }
 
   if (!session) {
-    // preserva a URL de destino para redirecionar após login
+    return <Navigate to="/admin/login" state={{ from: location }} replace />
+  }
+
+  if (perfil !== undefined && perfil !== null && perfil.status !== 'ativo') {
     return <Navigate to="/admin/login" state={{ from: location }} replace />
   }
 

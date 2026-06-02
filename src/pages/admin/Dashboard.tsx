@@ -1,15 +1,17 @@
+import { lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Building, Home, FileText, CalendarDays, TrendingUp, Users,
 } from 'lucide-react'
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
-} from 'recharts'
 import { useDashboardStats, useImoveisAdmin, useAgendamentos, useContratos } from '@/lib/queries'
 import { formatCurrency } from '@/lib/utils'
 
-const PIE_COLORS = ['#10b981', '#f43f5e', '#3b82f6', '#f59e0b']
+const TypeBarChart = lazy(() => import('./DashboardCharts').then(m => ({ default: m.TypeBarChart })))
+const StatusPieChart = lazy(() => import('./DashboardCharts').then(m => ({ default: m.StatusPieChart })))
+
+function ChartFallback({ h = 220 }: { h?: number }) {
+  return <div className="rounded-xl bg-slate-50 animate-pulse" style={{ height: h }} />
+}
 
 export default function AdminDashboard() {
   const { data: stats } = useDashboardStats()
@@ -90,38 +92,17 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
           <h3 className="text-sm font-bold text-slate-800 mb-5">Imóveis por Tipo</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={typeData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} tickLine={false} axisLine={false} allowDecimals={false} />
-              <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 4px 20px -5px rgba(0,0,0,0.1)', fontSize: 12 }} />
-              <Bar dataKey="value" name="Imóveis" fill="#f97316" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <Suspense fallback={<ChartFallback h={220} />}>
+            <TypeBarChart data={typeData} />
+          </Suspense>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
           <h3 className="text-sm font-bold text-slate-800 mb-5">Status do Portfólio</h3>
           {statusData.length > 0 ? (
-            <>
-              <ResponsiveContainer width="100%" height={180}>
-                <PieChart>
-                  <Pie data={statusData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
-                    {statusData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex flex-wrap gap-3 mt-3 justify-center">
-                {statusData.map((s, i) => (
-                  <div key={i} className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-                    <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                    {s.name} ({s.value})
-                  </div>
-                ))}
-              </div>
-            </>
+            <Suspense fallback={<ChartFallback h={180} />}>
+              <StatusPieChart data={statusData} />
+            </Suspense>
           ) : (
             <div className="flex items-center justify-center h-48 text-slate-300 text-sm font-medium">Sem dados ainda</div>
           )}

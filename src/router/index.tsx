@@ -8,6 +8,7 @@ const Home = lazy(() => import('@/pages/Home'))
 const Imoveis = lazy(() => import('@/pages/Imoveis'))
 const ImovelDetail = lazy(() => import('@/pages/ImovelDetail'))
 const Favoritos = lazy(() => import('@/pages/Favoritos'))
+const NotFound = lazy(() => import('@/pages/NotFound'))
 
 const AdminLogin = lazy(() => import('@/pages/admin/Login'))
 const AdminDashboard = lazy(() => import('@/pages/admin/Dashboard'))
@@ -18,6 +19,7 @@ const AdminContratos = lazy(() => import('@/pages/admin/Contratos'))
 const AdminAgendamentos = lazy(() => import('@/pages/admin/Agendamentos'))
 const AdminPerfil = lazy(() => import('@/pages/admin/Perfil'))
 const AdminEquipe = lazy(() => import('@/pages/admin/Equipe'))
+const AdminHistorico = lazy(() => import('@/pages/admin/Historico'))
 
 function Loading() {
   return (
@@ -35,6 +37,7 @@ const router = createBrowserRouter([
       { path: '/imoveis', element: <Suspense fallback={<Loading />}><Imoveis /></Suspense> },
       { path: '/imoveis/:id', element: <Suspense fallback={<Loading />}><ImovelDetail /></Suspense> },
       { path: '/favoritos', element: <Suspense fallback={<Loading />}><Favoritos /></Suspense> },
+      { path: '*', element: <Suspense fallback={<Loading />}><NotFound /></Suspense> },
     ],
   },
   {
@@ -56,6 +59,7 @@ const router = createBrowserRouter([
           { path: '/admin/agendamentos', element: <Suspense fallback={<Loading />}><AdminAgendamentos /></Suspense> },
           { path: '/admin/perfil', element: <Suspense fallback={<Loading />}><AdminPerfil /></Suspense> },
           { path: '/admin/equipe', element: <Suspense fallback={<Loading />}><AdminEquipe /></Suspense> },
+          { path: '/admin/historico', element: <Suspense fallback={<Loading />}><AdminHistorico /></Suspense> },
         ],
       },
     ],

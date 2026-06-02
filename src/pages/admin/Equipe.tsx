@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import {
   UserPlus, Pencil, Trash2, Search, Camera, Loader2,
@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { supabase, ASSETS_BUCKET } from '@/lib/supabase'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -82,10 +82,9 @@ export default function AdminEquipe() {
   const [uploadingFoto, setUploadingFoto] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
 
-  // Carrega corretores ao montar
-  useState(() => {
+  useEffect(() => {
     carregarCorretores()
-  })
+  }, [])
 
   async function carregarCorretores() {
     setLoading(true)
@@ -143,33 +142,31 @@ export default function AdminEquipe() {
     setSaving(true)
     try {
       if (!editando) {
-        // Cria usuário no Supabase Auth sem afetar a sessão atual
+        // Cria usuário no Auth sem afetar a sessão atual.
+        // O trigger handle_new_user (supabase-extras.sql) replica em `usuarios`.
         const tempClient = createClient(
           import.meta.env.VITE_SUPABASE_URL,
           import.meta.env.VITE_SUPABASE_ANON_KEY,
           { auth: { persistSession: false, autoRefreshToken: false } },
         )
-        const { error: authError } = await tempClient.auth.signUp({
+        const { data: authData, error: authError } = await tempClient.auth.signUp({
           email: form.email.trim(),
           password: form.senha,
           options: {
             data: { nome: form.nome.trim(), telefone: form.telefone.trim(), foto_url: form.foto_url },
           },
         })
-        if (authError && !authError.message.toLowerCase().includes('already registered')) {
-          throw authError
-        }
+        if (authError) throw authError
 
-        // Insere na tabela usuarios
-        const { error: dbError } = await supabase.from('usuarios').insert({
-          nome: form.nome.trim(),
-          email: form.email.trim(),
-          telefone: form.telefone.trim() || null,
-          foto_url: form.foto_url || null,
-          perfil: form.perfil,
-          status: form.status,
-        })
-        if (dbError) throw dbError
+        // Ajusta perfil/status caso o trigger tenha aplicado defaults
+        if (authData.user) {
+          await supabase.from('usuarios').update({
+            perfil: form.perfil,
+            status: form.status,
+            telefone: form.telefone.trim() || null,
+            foto_url: form.foto_url || null,
+          }).eq('id', authData.user.id)
+        }
         toast.success('Corretor cadastrado! Um e-mail de confirmação foi enviado.')
       } else {
         const { error } = await supabase.from('usuarios').update({

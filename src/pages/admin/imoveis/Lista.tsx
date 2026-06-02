@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search, Edit2, Trash2, Eye, Home } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Eye, Home, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { useImoveisAdmin, useDeleteImovel } from '@/lib/queries'
+import { useIsAdmin } from '@/hooks/useIsAdmin'
 import { formatCurrency, TIPO_IMOVEL_LABELS } from '@/lib/utils'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 const STATUS_BADGE: Record<string, 'success' | 'blue' | 'destructive' | 'secondary'> = {
   disponivel: 'success',
@@ -25,14 +28,32 @@ const STATUS_LABEL: Record<string, string> = {
 export default function AdminImoveisLista() {
   const { data: imoveis = [], isLoading } = useImoveisAdmin()
   const deleteImovel = useDeleteImovel()
+  const isAdmin = useIsAdmin()
+
   const [busca, setBusca] = useState('')
+  const [filtroStatus, setFiltroStatus] = useState('todos')
+  const [filtroTipo, setFiltroTipo] = useState('todos')
+  const [filtroNegocio, setFiltroNegocio] = useState('todos')
   const [confirmarDelete, setConfirmarDelete] = useState<{ id: string; titulo: string } | null>(null)
 
-  const filtrados = imoveis.filter(i =>
-    i.titulo.toLowerCase().includes(busca.toLowerCase()) ||
-    i.cidade?.toLowerCase().includes(busca.toLowerCase()) ||
-    (i.codigo ?? '').toLowerCase().includes(busca.toLowerCase())
-  )
+  const filtrados = useMemo(() => imoveis.filter(i => {
+    const t = busca.toLowerCase()
+    const matchBusca = !t ||
+      i.titulo.toLowerCase().includes(t) ||
+      (i.cidade ?? '').toLowerCase().includes(t) ||
+      (i.bairro ?? '').toLowerCase().includes(t) ||
+      (i.codigo ?? '').toLowerCase().includes(t)
+    const matchStatus = filtroStatus === 'todos' || i.status === filtroStatus
+    const matchTipo = filtroTipo === 'todos' || i.tipo_imovel === filtroTipo
+    const matchNegocio = filtroNegocio === 'todos' || i.tipo_negocio === filtroNegocio
+    return matchBusca && matchStatus && matchTipo && matchNegocio
+  }), [imoveis, busca, filtroStatus, filtroTipo, filtroNegocio])
+
+  const ativos = (filtroStatus !== 'todos' ? 1 : 0) + (filtroTipo !== 'todos' ? 1 : 0) + (filtroNegocio !== 'todos' ? 1 : 0)
+
+  function limparFiltros() {
+    setFiltroStatus('todos'); setFiltroTipo('todos'); setFiltroNegocio('todos'); setBusca('')
+  }
 
   async function handleDelete() {
     if (!confirmarDelete) return
@@ -46,24 +67,64 @@ export default function AdminImoveisLista() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-heading font-extrabold text-slate-900 tracking-tight">Imóveis</h1>
-          <p className="text-slate-500 text-sm font-medium mt-1">{imoveis.length} imóvel(is) cadastrado(s)</p>
+          <p className="text-slate-500 text-sm font-medium mt-1">
+            {imoveis.length} cadastrado(s){ativos > 0 || busca ? ` · ${filtrados.length} filtrado(s)` : ''}
+          </p>
         </div>
         <Button asChild>
           <Link to="/admin/imoveis/novo"><Plus className="h-4 w-4" />Novo Imóvel</Link>
         </Button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             type="search"
-            placeholder="Buscar por título, cidade ou código..."
+            placeholder="Buscar por título, bairro, cidade ou código..."
             value={busca}
             onChange={e => setBusca(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all"
           />
         </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+            <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos status</SelectItem>
+              <SelectItem value="disponivel">Disponível</SelectItem>
+              <SelectItem value="alugado">Alugado</SelectItem>
+              <SelectItem value="vendido">Vendido</SelectItem>
+              <SelectItem value="inativo">Inativo</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+            <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos tipos</SelectItem>
+              <SelectItem value="casa">Casa</SelectItem>
+              <SelectItem value="apartamento">Apartamento</SelectItem>
+              <SelectItem value="terreno">Terreno</SelectItem>
+              <SelectItem value="comercial">Comercial</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filtroNegocio} onValueChange={setFiltroNegocio}>
+            <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos negócios</SelectItem>
+              <SelectItem value="venda">Venda</SelectItem>
+              <SelectItem value="aluguel">Aluguel</SelectItem>
+              <SelectItem value="ambos">Ambos</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {(ativos > 0 || busca) && (
+          <button onClick={limparFiltros} className="text-xs font-bold text-slate-500 hover:text-orange-600 transition-colors flex items-center gap-1.5">
+            <X className="h-3 w-3" /> Limpar filtros
+          </button>
+        )}
       </div>
 
       {isLoading ? (
@@ -143,13 +204,15 @@ export default function AdminImoveisLista() {
                             <Edit2 className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <Button
-                          variant="ghost" size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
-                          onClick={() => setConfirmarDelete({ id: imovel.id, titulo: imovel.titulo })}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {isAdmin && (
+                          <Button
+                            variant="ghost" size="icon"
+                            className={cn('h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50')}
+                            onClick={() => setConfirmarDelete({ id: imovel.id, titulo: imovel.titulo })}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
