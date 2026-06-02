@@ -130,12 +130,12 @@ export function PropertyCard({ imovel, animDelay = 0 }: PropertyCardProps) {
 
             <div className="flex items-end justify-between">
               <div>
-                {price && (
+                {!!price && (
                   <p className="text-2xl font-extrabold text-slate-900 tracking-tight leading-none">
                     {formatCurrency(price)}
                   </p>
                 )}
-                {!imovel.preco_venda && imovel.preco_locacao && (
+                {!imovel.preco_venda && !!imovel.preco_locacao && (
                   <p className="text-xs text-slate-400 font-medium mt-0.5">/mês</p>
                 )}
               </div>
