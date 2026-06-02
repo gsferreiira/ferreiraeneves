@@ -100,8 +100,8 @@ export interface Usuario {
   email: string
   telefone: string | null
   foto_url: string | null
-  perfil: string
-  status: string
+  perfil: 'admin' | 'corretor'
+  status: 'ativo' | 'inativo'
   created_at: string
 }
 

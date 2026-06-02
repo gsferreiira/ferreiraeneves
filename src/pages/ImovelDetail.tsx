@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   MapPin, BedDouble, Bath, Car, Maximize2, Heart,
@@ -22,7 +22,7 @@ export default function ImovelDetail() {
   const [fotoIdx, setFotoIdx] = useState(0)
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_hora: '' })
   const [honeypot, setHoneypot] = useState('')
-  const formOpenAtRef = useState(() => Date.now())[0]
+  const formOpenAtRef = useRef(Date.now()).current
 
   useDocumentMeta({
     title: imovel?.titulo,
@@ -64,18 +64,22 @@ export default function ImovelDetail() {
       toast.error('Preencha nome, telefone e data/hora')
       return
     }
-    await createAgendamento.mutateAsync({
-      imovel_id: imovel!.id,
-      nome_cliente: form.nome,
-      telefone_cliente: form.telefone,
-      email_cliente: form.email || null,
-      data_hora: form.data_hora,
-      tipo: 'visita',
-      status: 'pendente',
-      observacoes: null,
-    })
-    toast.success('Visita agendada! Entraremos em contato para confirmar.')
-    setForm({ nome: '', telefone: '', email: '', data_hora: '' })
+    try {
+      await createAgendamento.mutateAsync({
+        imovel_id: imovel!.id,
+        nome_cliente: form.nome,
+        telefone_cliente: form.telefone,
+        email_cliente: form.email || null,
+        data_hora: form.data_hora,
+        tipo: 'visita',
+        status: 'pendente',
+        observacoes: null,
+      })
+      toast.success('Visita agendada! Entraremos em contato para confirmar.')
+      setForm({ nome: '', telefone: '', email: '', data_hora: '' })
+    } catch {
+      toast.error('Erro ao agendar visita. Tente novamente.')
+    }
   }
 
   const specs = [

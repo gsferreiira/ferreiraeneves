@@ -5,21 +5,20 @@ import { supabase } from '@/lib/supabase'
 export function useIsAdmin(): boolean {
   const { user } = useAuth()
   const { data } = useQuery({
-    queryKey: ['perfil-atual', user?.email],
+    queryKey: ['perfil-atual', user?.id],
     queryFn: async () => {
-      if (!user?.email) return null
+      if (!user?.id) return null
       const { data } = await supabase
         .from('usuarios')
         .select('perfil, status')
-        .eq('email', user.email)
+        .eq('id', user.id)
         .maybeSingle()
       return data
     },
-    enabled: !!user?.email,
+    enabled: !!user?.id,
     staleTime: 1000 * 60 * 5,
   })
-  // Se não há registro em `usuarios`, considera admin (compat com setup inicial)
   if (!user) return false
-  if (!data) return true
+  if (!data) return false
   return data.status === 'ativo' && data.perfil === 'admin'
 }

@@ -54,7 +54,8 @@ export default function AdminProprietarios() {
   )
 
   function set<K extends keyof FormState>(field: K, value: string) {
-    setForm(f => ({ ...f, [field]: value || null }))
+    const requiredStr = field === 'nome' || field === 'telefone'
+    setForm(f => ({ ...f, [field]: (requiredStr ? value : value || null) as FormState[K] }))
   }
   function abrirNovo() { setEditando(null); setForm(EMPTY); setDialogOpen(true) }
   function abrirEditar(p: Proprietario) {
@@ -65,14 +66,18 @@ export default function AdminProprietarios() {
 
   async function handleSalvar() {
     if (!form.nome.trim() || !form.telefone.trim()) { toast.error('Nome e telefone são obrigatórios'); return }
-    if (editando) {
-      await updateProprietario.mutateAsync({ id: editando.id, ...form })
-      toast.success('Proprietário atualizado')
-    } else {
-      await createProprietario.mutateAsync(form)
-      toast.success('Proprietário cadastrado')
+    try {
+      if (editando) {
+        await updateProprietario.mutateAsync({ id: editando.id, ...form })
+        toast.success('Proprietário atualizado')
+      } else {
+        await createProprietario.mutateAsync(form)
+        toast.success('Proprietário cadastrado')
+      }
+      setDialogOpen(false)
+    } catch {
+      toast.error('Erro ao salvar proprietário. Tente novamente.')
     }
-    setDialogOpen(false)
   }
 
   async function handleDelete() {

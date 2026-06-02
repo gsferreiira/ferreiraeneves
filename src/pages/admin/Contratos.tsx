@@ -64,20 +64,28 @@ export default function AdminContratos() {
     if (!form.nome_cliente.trim() || !form.imovel_id || !form.proprietario_id || !form.data_inicio || !form.valor) {
       toast.error('Preencha todos os campos obrigatórios'); return
     }
-    if (editando) {
-      await updateContrato.mutateAsync({ id: editando.id, ...form })
-      toast.success('Contrato atualizado')
-    } else {
-      await createContrato.mutateAsync(form)
-      toast.success('Contrato cadastrado')
+    try {
+      if (editando) {
+        await updateContrato.mutateAsync({ id: editando.id, ...form })
+        toast.success('Contrato atualizado')
+      } else {
+        await createContrato.mutateAsync(form)
+        toast.success('Contrato cadastrado')
+      }
+      setDialogOpen(false)
+    } catch {
+      toast.error('Erro ao salvar contrato. Tente novamente.')
     }
-    setDialogOpen(false)
   }
 
   async function handleDelete() {
     if (!confirmarDelete) return
-    await deleteContrato.mutateAsync(confirmarDelete.id)
-    toast.success('Contrato excluído')
+    try {
+      await deleteContrato.mutateAsync(confirmarDelete.id)
+      toast.success('Contrato excluído')
+    } catch {
+      toast.error('Erro ao excluir contrato.')
+    }
     setConfirmarDelete(null)
   }
 

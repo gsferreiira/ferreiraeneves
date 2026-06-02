@@ -14,21 +14,28 @@ export function useImoveis(filtros?: ImovelFiltros) {
         .eq('status', 'disponivel')
 
       if (filtros?.tipo_imovel) q = q.eq('tipo_imovel', filtros.tipo_imovel)
-      if (filtros?.tipo_negocio) q = q.eq('tipo_negocio', filtros.tipo_negocio)
+      if (filtros?.tipo_negocio) q = q.or(`tipo_negocio.eq.${filtros.tipo_negocio},tipo_negocio.eq.ambos`)
       if (filtros?.cidade) q = q.ilike('cidade', `%${filtros.cidade}%`)
       if (filtros?.quartos_min) q = q.gte('quartos', filtros.quartos_min)
-      if (filtros?.preco_min) q = q.gte('preco_venda', filtros.preco_min)
-      if (filtros?.preco_max) q = q.lte('preco_venda', filtros.preco_max)
+      if (filtros?.preco_min) {
+        const campoMin = filtros.tipo_negocio === 'aluguel' ? 'preco_locacao' : 'preco_venda'
+        q = q.gte(campoMin, filtros.preco_min)
+      }
+      if (filtros?.preco_max) {
+        const campoMax = filtros.tipo_negocio === 'aluguel' ? 'preco_locacao' : 'preco_venda'
+        q = q.lte(campoMax, filtros.preco_max)
+      }
       if (filtros?.busca) {
         q = q.or(`titulo.ilike.%${filtros.busca}%,bairro.ilike.%${filtros.busca}%,cidade.ilike.%${filtros.busca}%`)
       }
 
+      const campoPreco = filtros?.tipo_negocio === 'aluguel' ? 'preco_locacao' : 'preco_venda'
       switch (filtros?.ordem) {
         case 'preco_asc':
-          q = q.order('preco_venda', { ascending: true, nullsFirst: false })
+          q = q.order(campoPreco, { ascending: true, nullsFirst: false })
           break
         case 'preco_desc':
-          q = q.order('preco_venda', { ascending: false, nullsFirst: false })
+          q = q.order(campoPreco, { ascending: false, nullsFirst: false })
           break
         default:
           q = q.order('destaque', { ascending: false }).order('created_at', { ascending: false })
@@ -143,7 +150,8 @@ export function useDeleteImovel() {
 }
 
 export async function uploadFoto(file: File): Promise<string> {
-  const ext = file.name.split('.').pop()
+  const ext = file.name.includes('.') ? file.name.split('.').pop() : undefined
+  if (!ext) throw new Error('Arquivo sem extensão válida')
   const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
   const { error } = await supabase.storage.from(IMOVEIS_BUCKET).upload(path, file)
   if (error) throw error
@@ -395,6 +403,11 @@ export function useDashboardStats() {
         supabase.from('agendamentos').select('id, status, data_hora').gte('data_hora', new Date().toISOString()),
         supabase.from('proprietarios').select('id', { count: 'exact' }),
       ])
+
+      if (imoveis.error) throw imoveis.error
+      if (contratos.error) throw contratos.error
+      if (agendamentos.error) throw agendamentos.error
+      if (proprietarios.error) throw proprietarios.error
 
       const totalImoveis = imoveis.count ?? 0
       const imoveisDisponiveis = imoveis.data?.filter(i => i.status === 'disponivel').length ?? 0

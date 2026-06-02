@@ -7,9 +7,9 @@
   RewriteEngine On
   RewriteBase /
 
-  # Força HTTPS — descomente após instalar SSL no painel da Hostinger
-  # RewriteCond %{HTTPS} !=on
-  # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+  # Força HTTPS
+  RewriteCond %{HTTPS} !=on
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
   # Remove www (opcional — descomente se preferir sem www)
   # RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
@@ -78,6 +78,9 @@
   Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
   # HSTS — descomente após confirmar HTTPS funcionando
   # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+  # Content Security Policy
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src https://www.youtube.com https://www.youtube-nocookie.com; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';"
 </IfModule>
 
 # ============================================================
