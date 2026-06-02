@@ -97,7 +97,6 @@ export function PropertyCard({ imovel, animDelay = 0 }: PropertyCardProps) {
           </h3>
 
           <div className="mt-auto space-y-3">
-            {/* Specs */}
             <div className="flex items-center gap-3 text-slate-500 text-xs font-medium border-t border-slate-100 pt-3">
               {imovel.quartos > 0 && (
                 <span className="flex items-center gap-1">
@@ -117,7 +116,6 @@ export function PropertyCard({ imovel, animDelay = 0 }: PropertyCardProps) {
                   {imovel.vagas}
                 </span>
               )}
-              {/* Corrigido: !! evita o bug do 0 sendo renderizado como texto */}
               {!!((imovel.area_construida ?? imovel.area_total)) && (
                 <span className="flex items-center gap-1">
                   <Maximize className="h-3.5 w-3.5 text-orange-400" />
@@ -129,45 +127,26 @@ export function PropertyCard({ imovel, animDelay = 0 }: PropertyCardProps) {
                 <span className="text-slate-400">{imovel.cidade}</span>
               </span>
             </div>
+
+            <div className="flex items-end justify-between">
+              <div>
+                {price && (
+                  <p className="text-2xl font-extrabold text-slate-900 tracking-tight leading-none">
+                    {formatCurrency(price)}
+                  </p>
+                )}
+                {!imovel.preco_venda && imovel.preco_locacao && (
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">/mês</p>
+                )}
+              </div>
+              <div className="h-8 w-8 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center group-hover:bg-orange-500 group-hover:border-orange-500 transition-all duration-300">
+                <svg className="h-3.5 w-3.5 text-orange-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* Preço — barra destacada na base do card */}
-        {price ? (
-          <div className="mx-1.5 mb-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3 flex items-center justify-between shadow-md shadow-orange-500/20">
-            <div>
-              <p className="text-[10px] font-bold text-orange-200 uppercase tracking-wider mb-0.5">
-                {imovel.preco_venda && imovel.preco_locacao
-                  ? 'Venda / Aluguel'
-                  : imovel.preco_venda
-                    ? 'Venda'
-                    : 'Aluguel / mês'}
-              </p>
-              <p className="text-xl font-extrabold text-white tracking-tight leading-none">
-                {formatCurrency(price)}
-              </p>
-              {imovel.preco_venda && imovel.preco_locacao && (
-                <p className="text-[10px] text-orange-200 mt-0.5">
-                  Aluguel: {formatCurrency(imovel.preco_locacao)}/mês
-                </p>
-              )}
-            </div>
-            <div className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </div>
-        ) : (
-          <div className="mx-1.5 mb-1.5 rounded-xl border border-dashed border-slate-200 px-4 py-3 flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-400">Consultar valor</p>
-            <div className="h-9 w-9 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-orange-50 transition-colors">
-              <svg className="h-4 w-4 text-slate-400 group-hover:text-orange-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </div>
-        )}
       </Link>
     </div>
   )
