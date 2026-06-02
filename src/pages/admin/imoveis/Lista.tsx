@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { Plus, Search, Edit2, Trash2, Eye, Home, X } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Plus, Search, Edit2, Trash2, Eye, Home, X, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -26,6 +26,7 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 export default function AdminImoveisLista() {
+  const navigate = useNavigate()
   const { data: imoveis = [], isLoading } = useImoveisAdmin()
   const deleteImovel = useDeleteImovel()
   const isAdmin = useIsAdmin()
@@ -203,6 +204,14 @@ export default function AdminImoveisLista() {
                           <Link to={`/admin/imoveis/${imovel.id}/editar`}>
                             <Edit2 className="h-4 w-4" />
                           </Link>
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50"
+                          title="Duplicar imóvel"
+                          onClick={() => navigate('/admin/imoveis/novo', { state: { duplicarDe: imovel } })}
+                        >
+                          <Copy className="h-4 w-4" />
                         </Button>
                         {isAdmin && (
                           <Button

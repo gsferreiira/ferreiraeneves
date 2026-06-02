@@ -1,3 +1,12 @@
+export const CARACTERISTICAS_OPCOES = [
+  'Piscina', 'Academia', 'Churrasqueira', 'Varanda/Sacada', 'Mobiliado',
+  'Elevador', 'Segurança 24h', 'Pet Friendly', 'Ar-condicionado',
+  'Área de lazer', 'Salão de festas', 'Playground', 'Jardim',
+  'Garagem coberta', 'Quadra esportiva',
+] as const
+
+export type Caracteristica = typeof CARACTERISTICAS_OPCOES[number]
+
 export interface Imovel {
   id: string
   codigo: string | null
@@ -24,8 +33,20 @@ export interface Imovel {
   status: 'disponivel' | 'alugado' | 'vendido' | 'inativo'
   fotos: string[]
   video_url: string | null
+  caracteristicas: string[]
   proprietario_id: string | null
   proprietario?: Proprietario
+  created_at: string
+}
+
+export interface Artigo {
+  id: string
+  titulo: string
+  slug: string
+  resumo: string | null
+  conteudo: string
+  imagem_url: string | null
+  publicado: boolean
   created_at: string
 }
 
@@ -74,6 +95,7 @@ export interface Agendamento {
   data_hora: string
   tipo: 'visita' | 'reuniao'
   status: 'pendente' | 'confirmado' | 'cancelado' | 'realizado'
+  lido: boolean
   observacoes: string | null
   created_at: string
 }
@@ -123,9 +145,12 @@ export type ImovelFiltros = {
   tipo_imovel?: string
   tipo_negocio?: string
   cidade?: string
-  quartos_min?: number
-  preco_max?: number
-  preco_min?: number
   busca?: string
+  quartos_min?: number
+  banheiros_min?: number
+  vagas_min?: number
+  preco_min?: number
+  preco_max?: number
+  caracteristica?: string
   ordem?: ImovelOrdem
 }

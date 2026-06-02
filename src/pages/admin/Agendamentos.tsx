@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
-import { useAgendamentos, useCreateAgendamento, useUpdateAgendamento, useDeleteAgendamento, useImoveisAdmin } from '@/lib/queries'
+import { useAgendamentos, useCreateAgendamento, useUpdateAgendamento, useDeleteAgendamento, useImoveisAdmin, useMarcarAgendamentoLido } from '@/lib/queries'
 import { useIsAdmin } from '@/hooks/useIsAdmin'
 import { formatDateTime } from '@/lib/utils'
 import type { Agendamento } from '@/types'
@@ -48,6 +48,7 @@ export default function AdminAgendamentos() {
   const createAgendamento = useCreateAgendamento()
   const updateAgendamento = useUpdateAgendamento()
   const deleteAgendamento = useDeleteAgendamento()
+  const marcarLido = useMarcarAgendamentoLido()
   const isAdmin = useIsAdmin()
 
   const [view, setView] = useState<View>('calendario')
@@ -82,6 +83,7 @@ export default function AdminAgendamentos() {
     setDialogOpen(true)
   }
   function abrirEditar(a: Agendamento) {
+    if (!a.lido) marcarLido.mutate(a.id)
     setEditando(a)
     setForm({
       imovel_id: a.imovel_id, nome_cliente: a.nome_cliente, email_cliente: a.email_cliente,
@@ -306,6 +308,7 @@ export default function AdminAgendamentos() {
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-1">
                             <Badge variant={STATUS_BADGE[ag.status] ?? 'secondary'}>{STATUS_LABEL[ag.status]}</Badge>
+                            {!ag.lido && <span className="text-[10px] font-black text-white bg-rose-500 px-1.5 py-0.5 rounded-full uppercase tracking-wide">Novo</span>}
                             <span className="text-xs text-slate-400 font-medium">{formatDateTime(ag.data_hora)}</span>
                           </div>
                           <p className="font-semibold text-slate-900">{ag.nome_cliente}</p>

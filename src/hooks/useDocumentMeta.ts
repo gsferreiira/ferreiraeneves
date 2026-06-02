@@ -27,6 +27,8 @@ export function useDocumentMeta({ title, description, image }: Meta) {
     setMetaTag('name', 'description', finalDesc)
     setMetaTag('property', 'og:title', finalTitle)
     setMetaTag('property', 'og:description', finalDesc)
+    setMetaTag('property', 'og:url', window.location.href)
+    setMetaTag('property', 'og:type', title ? 'article' : 'website')
     if (image) setMetaTag('property', 'og:image', image)
 
     return () => {

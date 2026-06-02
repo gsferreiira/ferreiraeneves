@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bed, Bath, Maximize, MapPin, Heart, Car } from 'lucide-react'
+import { Bed, Bath, Maximize, MapPin, Heart, Car, Images, Star } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { useFavorites } from '@/hooks/useFavorites'
 import { cn } from '@/lib/utils'
@@ -22,6 +22,7 @@ interface PropertyCardProps {
 export function PropertyCard({ imovel, animDelay = 0 }: PropertyCardProps) {
   const { isFavorite, toggle } = useFavorites()
   const [imgSrc, setImgSrc] = useState(imovel.fotos?.[0] || PLACEHOLDER)
+  const [imgLoaded, setImgLoaded] = useState(false)
   const price = imovel.preco_venda ?? imovel.preco_locacao
   const favored = isFavorite(imovel.id)
 
@@ -35,26 +36,46 @@ export function PropertyCard({ imovel, animDelay = 0 }: PropertyCardProps) {
         className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
       >
         <div className="relative h-52 overflow-hidden m-1.5 rounded-xl bg-slate-100">
+          {/* Placeholder enquanto carrega */}
+          <div className={cn(
+            'absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200 transition-opacity duration-500',
+            imgLoaded ? 'opacity-0' : 'opacity-100 animate-pulse',
+          )} />
           <img
             src={imgSrc}
             alt={imovel.titulo}
             loading="lazy"
             decoding="async"
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-in-out"
-            onError={() => setImgSrc(PLACEHOLDER)}
+            className={cn(
+              'absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-500 ease-in-out',
+              imgLoaded ? 'opacity-100' : 'opacity-0',
+            )}
+            onLoad={() => setImgLoaded(true)}
+            onError={() => { setImgSrc(PLACEHOLDER); setImgLoaded(true) }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-          <div className="absolute top-2.5 left-2.5 flex gap-1.5 z-10">
+          <div className="absolute top-2.5 left-2.5 flex gap-1.5 z-10 flex-wrap max-w-[calc(100%-44px)]">
             <span className="bg-white/95 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide shadow">
               {imovel.tipo_negocio === 'venda' ? 'Venda' : imovel.tipo_negocio === 'aluguel' ? 'Aluguel' : 'Venda/Aluguel'}
             </span>
+            {imovel.destaque && (
+              <span className="bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide shadow flex items-center gap-0.5">
+                <Star className="h-2.5 w-2.5 fill-white" /> Destaque
+              </span>
+            )}
             {imovel.status !== 'disponivel' && (
               <span className={cn('text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide shadow', statusColor[imovel.status] ?? 'bg-slate-700')}>
                 {imovel.status === 'alugado' ? 'Alugado' : imovel.status === 'vendido' ? 'Vendido' : 'Inativo'}
               </span>
             )}
           </div>
+
+          {imovel.fotos?.length > 1 && (
+            <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1 bg-black/50 text-white text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur">
+              <Images className="h-3 w-3" /> {imovel.fotos.length}
+            </div>
+          )}
 
           <button
             type="button"
@@ -76,6 +97,7 @@ export function PropertyCard({ imovel, animDelay = 0 }: PropertyCardProps) {
           </h3>
 
           <div className="mt-auto space-y-3">
+            {/* Specs */}
             <div className="flex items-center gap-3 text-slate-500 text-xs font-medium border-t border-slate-100 pt-3">
               {imovel.quartos > 0 && (
                 <span className="flex items-center gap-1">
@@ -95,7 +117,8 @@ export function PropertyCard({ imovel, animDelay = 0 }: PropertyCardProps) {
                   {imovel.vagas}
                 </span>
               )}
-              {(imovel.area_construida ?? imovel.area_total) && (
+              {/* Corrigido: !! evita o bug do 0 sendo renderizado como texto */}
+              {!!((imovel.area_construida ?? imovel.area_total)) && (
                 <span className="flex items-center gap-1">
                   <Maximize className="h-3.5 w-3.5 text-orange-400" />
                   {imovel.area_construida ?? imovel.area_total}m²
@@ -106,26 +129,45 @@ export function PropertyCard({ imovel, animDelay = 0 }: PropertyCardProps) {
                 <span className="text-slate-400">{imovel.cidade}</span>
               </span>
             </div>
-
-            <div className="flex items-end justify-between">
-              <div>
-                {price && (
-                  <p className="text-2xl font-extrabold text-slate-900 tracking-tight leading-none">
-                    {formatCurrency(price)}
-                  </p>
-                )}
-                {!imovel.preco_venda && imovel.preco_locacao && (
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">/mês</p>
-                )}
-              </div>
-              <div className="h-8 w-8 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center group-hover:bg-orange-500 group-hover:border-orange-500 transition-all duration-300">
-                <svg className="h-3.5 w-3.5 text-orange-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </div>
           </div>
         </div>
+
+        {/* Preço — barra destacada na base do card */}
+        {price ? (
+          <div className="mx-1.5 mb-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3 flex items-center justify-between shadow-md shadow-orange-500/20">
+            <div>
+              <p className="text-[10px] font-bold text-orange-200 uppercase tracking-wider mb-0.5">
+                {imovel.preco_venda && imovel.preco_locacao
+                  ? 'Venda / Aluguel'
+                  : imovel.preco_venda
+                    ? 'Venda'
+                    : 'Aluguel / mês'}
+              </p>
+              <p className="text-xl font-extrabold text-white tracking-tight leading-none">
+                {formatCurrency(price)}
+              </p>
+              {imovel.preco_venda && imovel.preco_locacao && (
+                <p className="text-[10px] text-orange-200 mt-0.5">
+                  Aluguel: {formatCurrency(imovel.preco_locacao)}/mês
+                </p>
+              )}
+            </div>
+            <div className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        ) : (
+          <div className="mx-1.5 mb-1.5 rounded-xl border border-dashed border-slate-200 px-4 py-3 flex items-center justify-between">
+            <p className="text-sm font-semibold text-slate-400">Consultar valor</p>
+            <div className="h-9 w-9 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-orange-50 transition-colors">
+              <svg className="h-4 w-4 text-slate-400 group-hover:text-orange-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        )}
       </Link>
     </div>
   )

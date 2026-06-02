@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 const navLinks = [
   { name: 'Início', path: '/' },
   { name: 'Imóveis', path: '/imoveis' },
+  { name: 'Blog', path: '/blog' },
   { name: 'Sobre', path: '/#sobre' },
   { name: 'Contato', path: '/#contato' },
 ]
@@ -206,12 +207,18 @@ export function PublicHeader() {
           target="_blank"
           rel="noopener noreferrer"
           className={cn(
-            'fixed bottom-20 right-5 md:bottom-6 md:right-6 z-30 bg-[#25D366] text-white p-3.5 rounded-full shadow-lg hover:scale-110 transition-all duration-300 flex items-center justify-center hover:bg-[#20bd5a]',
-            isMenuOpen ? 'opacity-0 scale-50 pointer-events-none' : 'opacity-100 scale-100',
+            'fixed bottom-20 right-4 md:bottom-8 md:right-6 z-30 transition-all duration-300',
+            'flex items-center gap-3 bg-[#25D366] hover:bg-[#20bd5a] text-white',
+            'pl-4 pr-5 py-3 rounded-full shadow-xl shadow-green-500/30',
+            'hover:shadow-green-500/50 hover:-translate-y-1',
+            isMenuOpen ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100',
           )}
           aria-label="WhatsApp"
         >
-          <MessageCircle className="h-6 w-6" />
+          <MessageCircle className="h-5 w-5 shrink-0" />
+          <span className="text-sm font-bold hidden sm:block">Fale no WhatsApp</span>
+          {/* Pulse animation */}
+          <span className="absolute inset-0 rounded-full bg-[#25D366] animate-ping opacity-20 pointer-events-none" />
         </a>
       )}
 

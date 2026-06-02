@@ -2,12 +2,14 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   MapPin, BedDouble, Bath, Car, Maximize2, Heart,
-  ArrowLeft, ChevronLeft, ChevronRight, MessageCircle, Calendar, Phone, User, X,
+  ArrowLeft, ChevronLeft, ChevronRight, MessageCircle, Calendar, Phone, User, X, Share2, Copy, Check,
 } from 'lucide-react'
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useImovel, useCreateAgendamento, useConfiguracoes } from '@/lib/queries'
+import { useImovel, useCreateAgendamento, useConfiguracoes, useImoveisSimilares } from '@/lib/queries'
+import { PropertyCard } from '@/components/PropertyCard'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { formatCurrency, TIPO_IMOVEL_LABELS, TIPO_NEGOCIO_LABELS, getYouTubeEmbedUrl } from '@/lib/utils'
@@ -18,14 +20,17 @@ export default function ImovelDetail() {
   const { id } = useParams<{ id: string }>()
   const { data: imovel, isLoading, error } = useImovel(id!)
   const { data: config } = useConfiguracoes()
+  const { data: similares = [] } = useImoveisSimilares(id ?? '', imovel?.tipo_imovel ?? '', imovel?.cidade ?? '')
   const { isFavorite, toggle } = useFavorites()
   const createAgendamento = useCreateAgendamento()
   const [fotoIdx, setFotoIdx] = useState(0)
   const [lightbox, setLightbox] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_hora: '' })
   const [honeypot, setHoneypot] = useState('')
   const formOpenAtRef = useRef(Date.now()).current
   const touchStartX = useRef<number | null>(null)
+  const { track } = useRecentlyViewed()
 
   const prev = useCallback((total: number) => setFotoIdx(i => (i - 1 + total) % total), [])
   const next = useCallback((total: number) => setFotoIdx(i => (i + 1) % total), [])
@@ -55,6 +60,50 @@ export default function ImovelDetail() {
     image: imovel?.fotos?.[0],
   })
 
+  // Rastreia visualização e injeta Schema.org
+  useEffect(() => {
+    if (!imovel) return
+    track(imovel.id)
+
+    const addr = [imovel.rua, imovel.numero, imovel.bairro, imovel.cidade, imovel.estado].filter(Boolean).join(', ')
+    const ld = {
+      '@context': 'https://schema.org',
+      '@type': 'RealEstateListing',
+      name: imovel.titulo,
+      description: imovel.descricao ?? undefined,
+      url: window.location.href,
+      image: imovel.fotos.length > 0 ? imovel.fotos : undefined,
+      ...(imovel.preco_venda ? { price: imovel.preco_venda, priceCurrency: 'BRL' } : {}),
+      ...(imovel.quartos > 0 ? { numberOfRooms: imovel.quartos } : {}),
+      ...((imovel.area_construida ?? imovel.area_total) ? {
+        floorSize: { '@type': 'QuantitativeValue', value: imovel.area_construida ?? imovel.area_total, unitCode: 'MTK' },
+      } : {}),
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: [imovel.rua, imovel.numero].filter(Boolean).join(', ') || undefined,
+        addressLocality: imovel.cidade,
+        addressRegion: imovel.estado,
+        postalCode: imovel.cep ?? undefined,
+        addressCountry: 'BR',
+      },
+      offers: imovel.preco_venda ? {
+        '@type': 'Offer',
+        price: imovel.preco_venda,
+        priceCurrency: 'BRL',
+      } : undefined,
+      name: imovel.titulo,
+    }
+
+    const script = document.createElement('script')
+    script.type = 'application/ld+json'
+    script.id = 'schema-imovel'
+    script.textContent = JSON.stringify(ld)
+    document.getElementById('schema-imovel')?.remove()
+    document.head.appendChild(script)
+
+    return () => { document.getElementById('schema-imovel')?.remove() }
+  }, [imovel, track])
+
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-4">
@@ -78,6 +127,18 @@ export default function ImovelDetail() {
   const whatsapp = config?.whatsapp?.replace(/\D/g, '') ?? ''
   const waMsg = encodeURIComponent(`Olá! Tenho interesse no imóvel "${imovel.titulo}"${imovel.codigo ? ` (Cód. ${imovel.codigo})` : ''}.`)
   const waUrl = `https://wa.me/55${whatsapp}?text=${waMsg}`
+
+  async function handleShare() {
+    const url = window.location.href
+    const title = imovel!.titulo
+    if (navigator.share) {
+      await navigator.share({ title, url }).catch(() => {})
+    } else {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
 
   function onTouchStart(e: React.TouchEvent) {
     touchStartX.current = e.touches[0].clientX
@@ -234,16 +295,25 @@ export default function ImovelDetail() {
           </div>
         )}
 
-        <button
-          onClick={e => { e.stopPropagation(); toggle(imovel.id) }}
-          className={cn(
-            'absolute top-3 right-3 h-9 w-9 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-md hover:bg-white transition-all',
-            isFavorite(imovel.id) && 'text-red-500'
-          )}
-          aria-label="Favoritar"
-        >
-          <Heart className={cn('h-5 w-5', isFavorite(imovel.id) && 'fill-current')} />
-        </button>
+        <div className="absolute top-3 right-3 flex flex-col gap-2">
+          <button
+            onClick={e => { e.stopPropagation(); toggle(imovel.id) }}
+            className={cn(
+              'h-9 w-9 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-md hover:bg-white transition-all',
+              isFavorite(imovel.id) && 'text-red-500'
+            )}
+            aria-label="Favoritar"
+          >
+            <Heart className={cn('h-5 w-5', isFavorite(imovel.id) && 'fill-current')} />
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); handleShare() }}
+            className={cn('h-9 w-9 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-md hover:bg-white transition-all', copied && 'text-green-600')}
+            aria-label="Compartilhar"
+          >
+            {copied ? <Check className="h-5 w-5" /> : <Share2 className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {/* Miniaturas */}
@@ -408,6 +478,20 @@ export default function ImovelDetail() {
             </div>
           )}
 
+          {/* Características */}
+          {imovel.caracteristicas?.length > 0 && (
+            <div>
+              <h2 className="font-heading font-bold text-slate-900 text-lg mb-3">Diferenciais</h2>
+              <div className="flex flex-wrap gap-2">
+                {imovel.caracteristicas.map(c => (
+                  <span key={c} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-100 text-orange-700 text-xs font-bold">
+                    ✓ {c}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Mapa */}
           {(imovel.cidade || imovel.bairro) && (() => {
             const addr = [imovel.rua, imovel.numero, imovel.bairro, imovel.cidade, imovel.estado].filter(Boolean).join(', ')
@@ -439,6 +523,17 @@ export default function ImovelDetail() {
           )}
         </div>
       </div>
+      {/* Similares */}
+      {similares.length > 0 && (
+        <div className="mt-12 pt-10 border-t border-slate-100">
+          <h2 className="font-heading font-extrabold text-slate-900 text-2xl tracking-tight mb-6">
+            Imóveis <span className="text-orange-600">similares</span>
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {similares.map((s, i) => <PropertyCard key={s.id} imovel={s} animDelay={i * 80} />)}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

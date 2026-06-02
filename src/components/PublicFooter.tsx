@@ -54,6 +54,7 @@ export function PublicFooter() {
             <ul className="space-y-3.5 text-slate-400 text-sm">
               <li><Link to="/" className="hover:text-orange-400 transition-colors font-medium">Início</Link></li>
               <li><Link to="/imoveis" className="hover:text-orange-400 transition-colors font-medium">Imóveis</Link></li>
+              <li><Link to="/blog" className="hover:text-orange-400 transition-colors font-medium">Blog</Link></li>
               <li><Link to="/favoritos" className="hover:text-orange-400 transition-colors font-medium">Favoritos</Link></li>
             </ul>
           </div>
