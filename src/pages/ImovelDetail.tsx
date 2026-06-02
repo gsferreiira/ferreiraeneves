@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   MapPin, BedDouble, Bath, Car, Maximize2, Heart,
-  ArrowLeft, ChevronLeft, ChevronRight, MessageCircle, Calendar, Phone, User,
+  ArrowLeft, ChevronLeft, ChevronRight, MessageCircle, Calendar, Phone, User, X,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -21,9 +21,33 @@ export default function ImovelDetail() {
   const { isFavorite, toggle } = useFavorites()
   const createAgendamento = useCreateAgendamento()
   const [fotoIdx, setFotoIdx] = useState(0)
+  const [lightbox, setLightbox] = useState(false)
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_hora: '' })
   const [honeypot, setHoneypot] = useState('')
   const formOpenAtRef = useRef(Date.now()).current
+  const touchStartX = useRef<number | null>(null)
+
+  const prev = useCallback((total: number) => setFotoIdx(i => (i - 1 + total) % total), [])
+  const next = useCallback((total: number) => setFotoIdx(i => (i + 1) % total), [])
+
+  // Teclado: setas para navegar, Escape para fechar lightbox
+  useEffect(() => {
+    if (!lightbox) return
+    const fotos = imovel?.fotos ?? []
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowLeft') prev(fotos.length)
+      if (e.key === 'ArrowRight') next(fotos.length)
+      if (e.key === 'Escape') setLightbox(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [lightbox, imovel, prev, next])
+
+  // Impede scroll do body quando lightbox está aberto
+  useEffect(() => {
+    document.body.style.overflow = lightbox ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [lightbox])
 
   useDocumentMeta({
     title: imovel?.titulo,
@@ -55,11 +79,19 @@ export default function ImovelDetail() {
   const waMsg = encodeURIComponent(`Olá! Tenho interesse no imóvel "${imovel.titulo}"${imovel.codigo ? ` (Cód. ${imovel.codigo})` : ''}.`)
   const waUrl = `https://wa.me/55${whatsapp}?text=${waMsg}`
 
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return
+    const diff = touchStartX.current - e.changedTouches[0].clientX
+    if (Math.abs(diff) > 50) diff > 0 ? next(fotos.length) : prev(fotos.length)
+    touchStartX.current = null
+  }
+
   async function handleAgendamento(e: React.FormEvent) {
     e.preventDefault()
-    // Honeypot: bots geralmente preenchem todos os campos
     if (honeypot) return
-    // Tempo mínimo de preenchimento para descartar submissões automáticas
     if (Date.now() - formOpenAtRef < 1500) return
     if (!form.nome || !form.telefone || !form.data_hora) {
       toast.error('Preencha nome, telefone e data/hora')
@@ -93,50 +125,117 @@ export default function ImovelDetail() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
+      {/* ── Lightbox ── */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          onClick={() => setLightbox(false)}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+        >
+          {/* Fechar */}
+          <button
+            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+            onClick={() => setLightbox(false)}
+          >
+            <X className="h-5 w-5 text-white" />
+          </button>
+
+          {/* Contador */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-sm font-bold px-3 py-1 rounded-full">
+            {fotoIdx + 1} / {fotos.length}
+          </div>
+
+          {/* Foto */}
+          <img
+            src={fotos[fotoIdx]}
+            alt={imovel.titulo}
+            className="max-h-[90vh] max-w-[95vw] object-contain select-none"
+            onClick={e => e.stopPropagation()}
+            draggable={false}
+          />
+
+          {/* Setas */}
+          {fotos.length > 1 && (
+            <>
+              <button
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center transition-colors"
+                onClick={e => { e.stopPropagation(); prev(fotos.length) }}
+              >
+                <ChevronLeft className="h-6 w-6 text-white" />
+              </button>
+              <button
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center transition-colors"
+                onClick={e => { e.stopPropagation(); next(fotos.length) }}
+              >
+                <ChevronRight className="h-6 w-6 text-white" />
+              </button>
+            </>
+          )}
+
+          {/* Miniaturas no lightbox */}
+          {fotos.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 overflow-x-auto max-w-[90vw] px-2" onClick={e => e.stopPropagation()}>
+              {fotos.map((f, i) => (
+                <button key={i} onClick={() => setFotoIdx(i)}
+                  className={cn('shrink-0 h-12 w-16 rounded-lg overflow-hidden border-2 transition-all',
+                    i === fotoIdx ? 'border-orange-400 opacity-100' : 'border-transparent opacity-50 hover:opacity-80'
+                  )}>
+                  <img src={f} alt="" className="w-full h-full object-cover" draggable={false} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Voltar */}
       <Link to="/imoveis" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors mb-5">
         <ArrowLeft className="h-4 w-4" /> Voltar para imóveis
       </Link>
 
       {/* Galeria principal */}
-      <div className="relative h-64 sm:h-80 md:h-96 rounded-2xl overflow-hidden mb-3 bg-slate-100">
+      <div
+        className="relative h-64 sm:h-80 md:h-96 rounded-2xl overflow-hidden mb-3 bg-slate-100 cursor-zoom-in"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
         <img
           src={fotos[fotoIdx]}
           alt={imovel.titulo}
           className="w-full h-full object-cover"
+          onClick={() => setLightbox(true)}
           onError={e => { (e.target as HTMLImageElement).src = '/placeholder-house.jpg' }}
+          draggable={false}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
 
         {fotos.length > 1 && (
           <>
-            <button onClick={() => setFotoIdx(i => (i - 1 + fotos.length) % fotos.length)}
+            <button onClick={e => { e.stopPropagation(); prev(fotos.length) }}
               className="absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors">
               <ChevronLeft className="h-5 w-5 text-slate-700" />
             </button>
-            <button onClick={() => setFotoIdx(i => (i + 1) % fotos.length)}
+            <button onClick={e => { e.stopPropagation(); next(fotos.length) }}
               className="absolute right-12 sm:right-3 top-1/2 -translate-y-1/2 h-9 w-9 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors">
               <ChevronRight className="h-5 w-5 text-slate-700" />
             </button>
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 pointer-events-none">
               {fotos.map((_, i) => (
-                <button key={i} onClick={() => setFotoIdx(i)}
-                  className={cn('h-1.5 rounded-full transition-all', i === fotoIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/50')} />
+                <span key={i} className={cn('h-1.5 rounded-full transition-all', i === fotoIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/50')} />
               ))}
             </div>
           </>
         )}
 
-        {/* Contador de fotos */}
         {fotos.length > 1 && (
-          <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-lg backdrop-blur">
+          <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-lg backdrop-blur pointer-events-none">
             {fotoIdx + 1}/{fotos.length}
           </div>
         )}
 
-        {/* Favorito */}
         <button
-          onClick={() => toggle(imovel.id)}
+          onClick={e => { e.stopPropagation(); toggle(imovel.id) }}
           className={cn(
             'absolute top-3 right-3 h-9 w-9 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-md hover:bg-white transition-all',
             isFavorite(imovel.id) && 'text-red-500'
@@ -151,11 +250,11 @@ export default function ImovelDetail() {
       {fotos.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
           {fotos.map((f, i) => (
-            <button key={i} onClick={() => setFotoIdx(i)}
+            <button key={i} onClick={() => { setFotoIdx(i); setLightbox(true) }}
               className={cn('shrink-0 h-14 w-20 sm:h-16 sm:w-24 rounded-xl overflow-hidden border-2 transition-all',
                 i === fotoIdx ? 'border-orange-500 opacity-100' : 'border-transparent opacity-70 hover:opacity-100'
               )}>
-              <img src={f} alt="" className="w-full h-full object-cover" />
+              <img src={f} alt="" className="w-full h-full object-cover" draggable={false} />
             </button>
           ))}
         </div>
@@ -164,7 +263,7 @@ export default function ImovelDetail() {
       {/* Layout principal: conteúdo + sidebar */}
       <div className="grid md:grid-cols-3 gap-6 md:gap-8">
 
-        {/* ── Sidebar (aparece 1º no mobile, 2º no desktop) ── */}
+        {/* ── Sidebar ── */}
         <div className="md:col-span-1 order-first md:order-last space-y-4">
 
           {/* Corretor */}
@@ -210,16 +309,9 @@ export default function ImovelDetail() {
               Agendar Visita
             </h2>
             <form onSubmit={handleAgendamento} className="space-y-3">
-              {/* honeypot — invisível para humanos */}
-              <input
-                type="text"
-                tabIndex={-1}
-                autoComplete="off"
-                value={honeypot}
+              <input type="text" tabIndex={-1} autoComplete="off" value={honeypot}
                 onChange={e => setHoneypot(e.target.value)}
-                className="absolute opacity-0 pointer-events-none h-0 w-0"
-                aria-hidden="true"
-              />
+                className="absolute opacity-0 pointer-events-none h-0 w-0" aria-hidden="true" />
               {[
                 { id: 'nome', label: 'Nome *', type: 'text', placeholder: 'Seu nome', key: 'nome' as const, required: true },
                 { id: 'tel', label: 'Telefone *', type: 'tel', placeholder: '(00) 00000-0000', key: 'telefone' as const, required: true },
@@ -227,33 +319,20 @@ export default function ImovelDetail() {
               ].map(f => (
                 <div key={f.id}>
                   <label htmlFor={f.id} className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{f.label}</label>
-                  <input
-                    id={f.id}
-                    type={f.type}
-                    value={form[f.key]}
+                  <input id={f.id} type={f.type} value={form[f.key]}
                     onChange={e => setForm(a => ({ ...a, [f.key]: e.target.value }))}
-                    placeholder={f.placeholder}
-                    required={f.required}
-                    className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all"
-                  />
+                    placeholder={f.placeholder} required={f.required}
+                    className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all" />
                 </div>
               ))}
               <div>
                 <label htmlFor="data" className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Data e Hora *</label>
-                <input
-                  id="data"
-                  type="datetime-local"
-                  value={form.data_hora}
-                  onChange={e => setForm(a => ({ ...a, data_hora: e.target.value }))}
-                  required
-                  className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all"
-                />
+                <input id="data" type="datetime-local" value={form.data_hora}
+                  onChange={e => setForm(a => ({ ...a, data_hora: e.target.value }))} required
+                  className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all" />
               </div>
-              <button
-                type="submit"
-                disabled={createAgendamento.isPending}
-                className="w-full h-11 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold text-sm rounded-xl transition-all shadow-sm shadow-orange-200 mt-1"
-              >
+              <button type="submit" disabled={createAgendamento.isPending}
+                className="w-full h-11 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold text-sm rounded-xl transition-all shadow-sm shadow-orange-200 mt-1">
                 {createAgendamento.isPending ? 'Aguarde...' : 'Agendar Visita'}
               </button>
             </form>
@@ -287,17 +366,13 @@ export default function ImovelDetail() {
             {imovel.preco_venda && (
               <div className="bg-orange-50 border border-orange-100 rounded-2xl px-5 py-3">
                 <p className="text-[10px] font-bold text-orange-600 uppercase tracking-wider mb-1">Venda</p>
-                <p className="text-2xl font-extrabold text-slate-900 font-heading tracking-tight">
-                  {formatCurrency(imovel.preco_venda)}
-                </p>
+                <p className="text-2xl font-extrabold text-slate-900 font-heading tracking-tight">{formatCurrency(imovel.preco_venda)}</p>
               </div>
             )}
             {imovel.preco_locacao && (
               <div className="bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3">
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Aluguel / mês</p>
-                <p className="text-2xl font-extrabold text-slate-900 font-heading tracking-tight">
-                  {formatCurrency(imovel.preco_locacao)}
-                </p>
+                <p className="text-2xl font-extrabold text-slate-900 font-heading tracking-tight">{formatCurrency(imovel.preco_locacao)}</p>
               </div>
             )}
           </div>
@@ -319,7 +394,6 @@ export default function ImovelDetail() {
             </div>
           )}
 
-          {/* Suítes separadas */}
           {imovel.suites > 0 && (
             <p className="text-sm text-slate-500 font-medium -mt-2">
               Sendo {imovel.suites} {imovel.suites === 1 ? 'suíte' : 'suítes'}
@@ -345,16 +419,9 @@ export default function ImovelDetail() {
                   Localização
                 </h2>
                 <div className="rounded-2xl overflow-hidden border border-slate-100 h-64">
-                  <iframe
-                    src={mapUrl}
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    allowFullScreen
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title="Localização do imóvel"
-                  />
+                  <iframe src={mapUrl} width="100%" height="100%" style={{ border: 0 }}
+                    allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade"
+                    title="Localização do imóvel" />
                 </div>
               </div>
             )
@@ -365,12 +432,8 @@ export default function ImovelDetail() {
             <div>
               <h2 className="font-heading font-bold text-slate-900 text-lg mb-3">Vídeo</h2>
               <div className="aspect-video rounded-2xl overflow-hidden bg-slate-100">
-                <iframe
-                  src={getYouTubeEmbedUrl(imovel.video_url) ?? ''}
-                  className="w-full h-full"
-                  allowFullScreen
-                  title="Vídeo do imóvel"
-                />
+                <iframe src={getYouTubeEmbedUrl(imovel.video_url) ?? ''} className="w-full h-full"
+                  allowFullScreen title="Vídeo do imóvel" />
               </div>
             </div>
           )}
