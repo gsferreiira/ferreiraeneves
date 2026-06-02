@@ -2,8 +2,9 @@ import { useState, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   MapPin, BedDouble, Bath, Car, Maximize2, Heart,
-  ArrowLeft, ChevronLeft, ChevronRight, MessageCircle, Calendar,
+  ArrowLeft, ChevronLeft, ChevronRight, MessageCircle, Calendar, Phone, User,
 } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useImovel, useCreateAgendamento, useConfiguracoes } from '@/lib/queries'
@@ -166,18 +167,41 @@ export default function ImovelDetail() {
         {/* ── Sidebar (aparece 1º no mobile, 2º no desktop) ── */}
         <div className="md:col-span-1 order-first md:order-last space-y-4">
 
-          {/* WhatsApp CTA */}
-          {whatsapp && (
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2.5 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 rounded-2xl shadow-md shadow-green-500/20 transition-all hover:-translate-y-0.5 text-sm"
-            >
-              <MessageCircle className="h-5 w-5" />
-              Falar pelo WhatsApp
-            </a>
-          )}
+          {/* Corretor */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <h2 className="font-heading font-bold text-slate-900 text-base flex items-center gap-2 mb-4">
+              <User className="h-4 w-4 text-orange-500" />
+              Fale com um Corretor
+            </h2>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shrink-0 shadow-sm shadow-orange-500/20">
+                {config?.logo_url
+                  ? <img src={config.logo_url} alt="Logo" className="w-full h-full object-cover rounded-xl" />
+                  : <span className="text-white font-extrabold text-lg font-heading">FN</span>
+                }
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900 text-sm">{config?.nome_empresa ?? 'Ferreira & Neves'}</p>
+                {config?.creci && <p className="text-xs text-slate-400">CRECI {config.creci}</p>}
+              </div>
+            </div>
+            <div className="space-y-2">
+              {config?.telefone && (
+                <a href={`tel:${config.telefone.replace(/\D/g, '')}`}
+                  className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                  <Phone className="h-4 w-4 text-slate-400 shrink-0" />
+                  {config.telefone}
+                </a>
+              )}
+              {whatsapp && (
+                <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-bold hover:bg-[#20bd5a] transition-colors">
+                  <MessageCircle className="h-4 w-4 shrink-0" />
+                  Chamar no WhatsApp
+                </a>
+              )}
+            </div>
+          </div>
 
           {/* Agendar visita */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
@@ -309,6 +333,32 @@ export default function ImovelDetail() {
               <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{imovel.descricao}</p>
             </div>
           )}
+
+          {/* Mapa */}
+          {(imovel.cidade || imovel.bairro) && (() => {
+            const addr = [imovel.rua, imovel.numero, imovel.bairro, imovel.cidade, imovel.estado].filter(Boolean).join(', ')
+            const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(addr)}&t=&z=15&ie=UTF8&iwloc=&output=embed`
+            return (
+              <div>
+                <h2 className="font-heading font-bold text-slate-900 text-lg mb-3 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-orange-500" />
+                  Localização
+                </h2>
+                <div className="rounded-2xl overflow-hidden border border-slate-100 h-64">
+                  <iframe
+                    src={mapUrl}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Localização do imóvel"
+                  />
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Vídeo */}
           {imovel.video_url && getYouTubeEmbedUrl(imovel.video_url) && (
