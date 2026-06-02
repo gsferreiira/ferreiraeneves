@@ -442,7 +442,7 @@ export default function ImovelDetail() {
 
           {/* Preços */}
           <div className="flex flex-wrap gap-4">
-            {imovel.preco_venda && (
+            {!!imovel.preco_venda && (
               <div className="flex-1 min-w-[180px] bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl px-6 py-5 shadow-lg shadow-orange-500/20">
                 <p className="text-xs font-bold text-orange-200 uppercase tracking-widest mb-1.5">Valor de Venda</p>
                 <p className="text-4xl font-extrabold text-white font-heading tracking-tight leading-none">
@@ -450,7 +450,7 @@ export default function ImovelDetail() {
                 </p>
               </div>
             )}
-            {imovel.preco_locacao && (
+            {!!imovel.preco_locacao && (
               <div className="flex-1 min-w-[180px] bg-white border-2 border-slate-200 rounded-2xl px-6 py-5">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Aluguel / mês</p>
                 <p className="text-4xl font-extrabold text-slate-900 font-heading tracking-tight leading-none">
