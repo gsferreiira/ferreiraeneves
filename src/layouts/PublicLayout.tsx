@@ -1,8 +1,15 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { PublicHeader } from '@/components/PublicHeader'
 import { PublicFooter } from '@/components/PublicFooter'
 
 export function PublicLayout() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [pathname])
+
   return (
     <div className="min-h-screen flex flex-col">
       <PublicHeader />
