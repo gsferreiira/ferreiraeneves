@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase, IMOVEIS_BUCKET } from './supabase'
-import type { Imovel, Proprietario, Contrato, Agendamento, Configuracoes, ImovelFiltros, AuditLog } from '@/types'
+import type { Imovel, Proprietario, Contrato, Agendamento, Configuracoes, ImovelFiltros, AuditLog, Artigo } from '@/types'
 
 // ─── Imóveis ────────────────────────────────────────────────────────────────
 
@@ -17,6 +17,9 @@ export function useImoveis(filtros?: ImovelFiltros) {
       if (filtros?.tipo_negocio) q = q.or(`tipo_negocio.eq.${filtros.tipo_negocio},tipo_negocio.eq.ambos`)
       if (filtros?.cidade) q = q.ilike('cidade', `%${filtros.cidade}%`)
       if (filtros?.quartos_min) q = q.gte('quartos', filtros.quartos_min)
+      if (filtros?.banheiros_min) q = q.gte('banheiros', filtros.banheiros_min)
+      if (filtros?.vagas_min) q = q.gte('vagas', filtros.vagas_min)
+      if (filtros?.caracteristica) q = q.contains('caracteristicas', [filtros.caracteristica])
       if (filtros?.preco_min) {
         const campoMin = filtros.tipo_negocio === 'aluguel' ? 'preco_locacao' : 'preco_venda'
         q = q.gte(campoMin, filtros.preco_min)
@@ -311,10 +314,21 @@ export function useAgendamentos() {
   })
 }
 
+export function useMarcarAgendamentoLido() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('agendamentos').update({ lido: true }).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['agendamentos'] }),
+  })
+}
+
 export function useCreateAgendamento() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (payload: Omit<Agendamento, 'id' | 'created_at' | 'imovel'>) => {
+    mutationFn: async (payload: Omit<Agendamento, 'id' | 'created_at' | 'imovel' | 'lido'>) => {
       const { data, error } = await supabase.from('agendamentos').insert(payload).select().single()
       if (error) throw error
       return data as Agendamento
@@ -418,5 +432,101 @@ export function useDashboardStats() {
 
       return { totalImoveis, imoveisDisponiveis, contratosAtivos, receitaTotal, agendamentosPendentes, totalProprietarios }
     },
+  })
+}
+
+// ─── Imóveis Similares ───────────────────────────────────────────────────────
+
+export function useImoveisSimilares(imovelId: string, tipoImovel: string, cidade: string) {
+  return useQuery({
+    queryKey: ['imoveis-similares', imovelId, tipoImovel, cidade],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('imoveis')
+        .select('*')
+        .eq('status', 'disponivel')
+        .eq('tipo_imovel', tipoImovel)
+        .ilike('cidade', `%${cidade}%`)
+        .neq('id', imovelId)
+        .order('destaque', { ascending: false })
+        .limit(3)
+      if (error) throw error
+      return data as Imovel[]
+    },
+    enabled: !!imovelId && !!tipoImovel && !!cidade,
+  })
+}
+
+// ─── Blog ────────────────────────────────────────────────────────────────────
+
+export function useArtigos(apenasPublicados = true) {
+  return useQuery({
+    queryKey: ['artigos', apenasPublicados],
+    queryFn: async () => {
+      let q = supabase.from('artigos').select('*').order('created_at', { ascending: false })
+      if (apenasPublicados) q = q.eq('publicado', true)
+      const { data, error } = await q
+      if (error) throw error
+      return data as Artigo[]
+    },
+  })
+}
+
+export function useArtigo(slug: string) {
+  return useQuery({
+    queryKey: ['artigo', slug],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('artigos').select('*').eq('slug', slug).single()
+      if (error) throw error
+      return data as Artigo
+    },
+    enabled: !!slug,
+  })
+}
+
+export function useArtigoById(id: string) {
+  return useQuery({
+    queryKey: ['artigo-id', id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('artigos').select('*').eq('id', id).single()
+      if (error) throw error
+      return data as Artigo
+    },
+    enabled: !!id,
+  })
+}
+
+export function useCreateArtigo() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Omit<Artigo, 'id' | 'created_at'>) => {
+      const { data, error } = await supabase.from('artigos').insert(payload).select().single()
+      if (error) throw error
+      return data as Artigo
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['artigos'] }),
+  })
+}
+
+export function useUpdateArtigo() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: Partial<Artigo> & { id: string }) => {
+      const { data, error } = await supabase.from('artigos').update(payload).eq('id', id).select().single()
+      if (error) throw error
+      return data as Artigo
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['artigos'] }),
+  })
+}
+
+export function useDeleteArtigo() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('artigos').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['artigos'] }),
   })
 }

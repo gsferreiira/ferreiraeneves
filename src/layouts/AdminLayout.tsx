@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Home, FileText, UserCheck, CalendarDays,
-  LogOut, Bell, Menu, X, UserCircle, Globe, Users, Calendar, FileText as ContratoIcon, History,
+  LogOut, Bell, Menu, X, UserCircle, Globe, Users, Calendar, FileText as ContratoIcon, History, BookOpen,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
 import { useNotificacoes, type Notificacao } from '@/hooks/useNotificacoes'
+import { useAgendamentos } from '@/lib/queries'
 import { cn } from '@/lib/utils'
 
 const AVATAR_SIZES = { sm: 'h-8 w-8 text-sm', md: 'h-9 w-9 text-sm', lg: 'h-12 w-12 text-lg' } as const
@@ -43,6 +44,7 @@ const navGroups = [
     label: 'Configurações',
     items: [
       { label: 'Equipe', icon: Users, path: '/admin/equipe' },
+      { label: 'Blog', icon: BookOpen, path: '/admin/blog' },
       { label: 'Histórico', icon: History, path: '/admin/historico' },
     ],
   },
@@ -62,6 +64,8 @@ export function AdminLayout() {
   const [notificacoesOpen, setNotificacoesOpen] = useState(false)
   const { signOut, user } = useAuth()
   const notificacoes = useNotificacoes()
+  const { data: agendamentos = [] } = useAgendamentos()
+  const naoLidos = agendamentos.filter(a => !a.lido).length
 
   const meta = user?.user_metadata ?? {}
   const nome = (meta.nome as string) || user?.email?.split('@')[0] || 'Admin'
@@ -78,6 +82,7 @@ export function AdminLayout() {
 
   function NavItem({ item }: { item: { label: string; icon: React.ElementType; path: string } }) {
     const active = isActive(item.path)
+    const badge = item.path === '/admin/agendamentos' && naoLidos > 0 ? naoLidos : 0
     return (
       <Link
         to={item.path}
@@ -90,7 +95,12 @@ export function AdminLayout() {
         )}
       >
         <item.icon className="h-4 w-4 shrink-0" />
-        {item.label}
+        <span className="flex-1">{item.label}</span>
+        {badge > 0 && (
+          <span className="h-5 min-w-5 px-1 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
+            {badge > 9 ? '9+' : badge}
+          </span>
+        )}
       </Link>
     )
   }

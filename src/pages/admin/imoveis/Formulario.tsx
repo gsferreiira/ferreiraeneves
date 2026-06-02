@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PhotoUploader } from '@/components/PhotoUploader'
 import { useImovel, useCreateImovel, useUpdateImovel, useProprietarios } from '@/lib/queries'
 import { generateCodigo } from '@/lib/utils'
+import { CARACTERISTICAS_OPCOES } from '@/types'
 import { toast } from 'sonner'
 
 interface ViaCepResponse {
@@ -49,6 +50,7 @@ const schema = z.object({
   video_url: z.string().optional(),
   proprietario_id: z.string().nullable().optional(),
   fotos: z.array(z.string()).default([]),
+  caracteristicas: z.array(z.string()).default([]),
 })
 
 type FormData = z.infer<typeof schema>
@@ -120,6 +122,8 @@ export default function AdminImoveisFormulario() {
   const { id } = useParams<{ id: string }>()
   const isEditing = !!id
   const navigate = useNavigate()
+  const { state } = window.history
+  const duplicarDe = (state as { usr?: { duplicarDe?: Record<string, unknown> } })?.usr?.duplicarDe
   const [activeTab, setActiveTab] = useState<Tab>('geral')
 
   const { data: imovel, isLoading: loadingImovel } = useImovel(id ?? '')
@@ -131,6 +135,39 @@ export default function AdminImoveisFormulario() {
     resolver: zodResolver(schema) as Resolver<FormInput, unknown, FormData>,
     defaultValues: { quartos: 0, suites: 0, banheiros: 0, vagas: 0, destaque: false, status: 'disponivel', fotos: [] },
   })
+
+  // Pré-carrega dados quando duplicando
+  useEffect(() => {
+    if (!isEditing && duplicarDe) {
+      const d = duplicarDe as Record<string, unknown>
+      reset({
+        titulo: `${d.titulo as string} (cópia)`,
+        descricao: (d.descricao as string) ?? undefined,
+        tipo_imovel: d.tipo_imovel as FormData['tipo_imovel'],
+        tipo_negocio: d.tipo_negocio as FormData['tipo_negocio'],
+        rua: (d.rua as string) ?? undefined,
+        numero: (d.numero as string) ?? undefined,
+        complemento: (d.complemento as string) ?? undefined,
+        bairro: (d.bairro as string) ?? undefined,
+        cidade: d.cidade as string,
+        estado: d.estado as string,
+        cep: (d.cep as string) ?? undefined,
+        area_construida: (d.area_construida as number) ?? undefined,
+        area_total: (d.area_total as number) ?? undefined,
+        quartos: (d.quartos as number) ?? 0,
+        suites: (d.suites as number) ?? 0,
+        banheiros: (d.banheiros as number) ?? 0,
+        vagas: (d.vagas as number) ?? 0,
+        preco_venda: (d.preco_venda as number) ?? undefined,
+        preco_locacao: (d.preco_locacao as number) ?? undefined,
+        destaque: false,
+        status: 'disponivel',
+        video_url: (d.video_url as string) ?? undefined,
+        proprietario_id: (d.proprietario_id as string) ?? undefined,
+        fotos: [],
+      })
+    }
+  }, [isEditing, duplicarDe, reset])
 
   useEffect(() => {
     if (imovel) {
@@ -149,6 +186,7 @@ export default function AdminImoveisFormulario() {
         preco_venda: imovel.preco_venda ?? undefined,
         preco_locacao: imovel.preco_locacao ?? undefined,
         fotos: imovel.fotos ?? [],
+        caracteristicas: imovel.caracteristicas ?? [],
       })
     }
   }, [imovel, reset])
@@ -489,6 +527,36 @@ export default function AdminImoveisFormulario() {
           <div>
             <FieldLabel>URL do Vídeo (YouTube, opcional)</FieldLabel>
             <FieldInput {...register('video_url')} placeholder="https://youtube.com/watch?v=..." />
+          </div>
+
+          {/* Características */}
+          <div>
+            <FieldLabel>Características e Diferenciais</FieldLabel>
+            <Controller
+              name="caracteristicas"
+              control={control}
+              render={({ field }) => (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-1">
+                  {CARACTERISTICAS_OPCOES.map(c => {
+                    const checked = (field.value ?? []).includes(c)
+                    return (
+                      <label key={c} className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all text-sm font-medium select-none ${checked ? 'bg-orange-50 border-orange-300 text-orange-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-orange-200'}`}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            const cur = field.value ?? []
+                            field.onChange(checked ? cur.filter(x => x !== c) : [...cur, c])
+                          }}
+                          className="h-4 w-4 accent-orange-500 shrink-0"
+                        />
+                        {c}
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+            />
           </div>
         </div>
       )}
