@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   MapPin, BedDouble, Bath, Car, Maximize2, Heart,
-  ArrowLeft, ChevronLeft, ChevronRight, MessageCircle, Calendar, Phone, User, X, Share2, Copy, Check,
+  ArrowLeft, ChevronLeft, ChevronRight, MessageCircle, Calendar, Phone, User, X, Share2, Check, Images,
 } from 'lucide-react'
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
 
@@ -289,6 +289,15 @@ export default function ImovelDetail() {
           </>
         )}
 
+        {/* Botão "Ver fotos" — indica que a galeria é clicável */}
+        <button
+          onClick={() => setLightbox(true)}
+          className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 hover:bg-black/80 text-white text-xs font-bold px-3 py-2 rounded-xl backdrop-blur transition-colors"
+        >
+          <Images className="h-3.5 w-3.5" />
+          {fotos.length > 1 ? `Ver ${fotos.length} fotos` : 'Ampliar foto'}
+        </button>
+
         {fotos.length > 1 && (
           <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-lg backdrop-blur pointer-events-none">
             {fotoIdx + 1}/{fotos.length}
@@ -432,17 +441,21 @@ export default function ImovelDetail() {
           </div>
 
           {/* Preços */}
-          <div className="flex flex-wrap gap-5">
+          <div className="flex flex-wrap gap-4">
             {imovel.preco_venda && (
-              <div className="bg-orange-50 border border-orange-100 rounded-2xl px-5 py-3">
-                <p className="text-[10px] font-bold text-orange-600 uppercase tracking-wider mb-1">Venda</p>
-                <p className="text-2xl font-extrabold text-slate-900 font-heading tracking-tight">{formatCurrency(imovel.preco_venda)}</p>
+              <div className="flex-1 min-w-[180px] bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl px-6 py-5 shadow-lg shadow-orange-500/20">
+                <p className="text-xs font-bold text-orange-200 uppercase tracking-widest mb-1.5">Valor de Venda</p>
+                <p className="text-4xl font-extrabold text-white font-heading tracking-tight leading-none">
+                  {formatCurrency(imovel.preco_venda)}
+                </p>
               </div>
             )}
             {imovel.preco_locacao && (
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3">
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Aluguel / mês</p>
-                <p className="text-2xl font-extrabold text-slate-900 font-heading tracking-tight">{formatCurrency(imovel.preco_locacao)}</p>
+              <div className="flex-1 min-w-[180px] bg-white border-2 border-slate-200 rounded-2xl px-6 py-5">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Aluguel / mês</p>
+                <p className="text-4xl font-extrabold text-slate-900 font-heading tracking-tight leading-none">
+                  {formatCurrency(imovel.preco_locacao)}
+                </p>
               </div>
             )}
           </div>
