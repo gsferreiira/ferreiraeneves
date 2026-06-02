@@ -1,0 +1,51 @@
+name: Deploy → Hostinger (FTP)
+
+# Disparado manualmente em Actions → "Run workflow".
+# Antes do primeiro uso, configure em Settings → Secrets:
+#   FTP_HOST           ex: ftp.seudominio.com.br  (ou IP do servidor)
+#   FTP_USERNAME       ex: u123456789.ferreiraeneves
+#   FTP_PASSWORD       senha do FTP (criada no painel da Hostinger)
+#   FTP_SERVER_DIR     ex: /public_html/   (com barra no início e fim)
+#   VITE_SUPABASE_URL
+#   VITE_SUPABASE_ANON_KEY
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./dist/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          # Limpa arquivos antigos que não existem mais no build,
+          # mas preserva pastas/arquivos administrativos da Hostinger.
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/cgi-bin/**
+            **/.well-known/**

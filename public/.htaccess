@@ -1,0 +1,100 @@
+# ============================================================
+# Ferreira & Neves — Configuração Apache (Hostinger)
+# ============================================================
+
+# Habilita reescrita de URL (necessário para SPA)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Força HTTPS — descomente após instalar SSL no painel da Hostinger
+  # RewriteCond %{HTTPS} !=on
+  # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # Remove www (opcional — descomente se preferir sem www)
+  # RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  # RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
+
+  # Não reescreve arquivos físicos ou diretórios reais
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # SPA fallback — qualquer rota cai no index.html
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# ============================================================
+# Compressão Gzip
+# ============================================================
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
+  AddOutputFilterByType DEFLATE application/javascript application/json application/xml
+  AddOutputFilterByType DEFLATE application/x-javascript application/xhtml+xml application/rss+xml
+  AddOutputFilterByType DEFLATE image/svg+xml font/woff font/woff2 application/font-woff application/font-woff2
+</IfModule>
+
+# ============================================================
+# Cache de assets estáticos (Vite gera hash no nome dos arquivos,
+# então podem ser cacheados por 1 ano com segurança)
+# ============================================================
+<IfModule mod_expires.c>
+  ExpiresActive On
+
+  # HTML — sem cache forte (precisa atualizar para o user pegar versões novas)
+  ExpiresByType text/html "access plus 0 seconds"
+
+  # Assets com hash no nome — cache longo
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType application/x-javascript "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+  ExpiresByType font/woff "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+
+  # Manifest e sitemap — atualização semanal
+  ExpiresByType application/manifest+json "access plus 1 week"
+  ExpiresByType application/xml "access plus 1 day"
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Cache-Control reforçando o Expires
+  <FilesMatch "\.(css|js|jpg|jpeg|png|svg|webp|woff2?|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </FilesMatch>
+
+  # Security headers
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  # HSTS — descomente após confirmar HTTPS funcionando
+  # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
+# ============================================================
+# MIME types modernos (caso o Apache da Hostinger não trate)
+# ============================================================
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+  AddType image/webp .webp
+  AddType font/woff2 .woff2
+</IfModule>
+
+# ============================================================
+# Bloqueia listagem de diretórios
+# ============================================================
+Options -Indexes
+
+# ============================================================
+# Página de erro custom — 404 cai no index.html (SPA decide)
+# ============================================================
+ErrorDocument 404 /index.html
