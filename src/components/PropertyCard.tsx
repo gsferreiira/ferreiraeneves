@@ -80,7 +80,7 @@ export function PropertyCard({ imovel, animDelay = 0 }: PropertyCardProps) {
           <button
             type="button"
             onClick={e => { e.preventDefault(); e.stopPropagation(); toggle(imovel.id) }}
-            className="absolute top-2.5 right-2.5 z-10 h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow hover:bg-white transition-all"
+            className="absolute top-2.5 right-2.5 z-10 h-11 w-11 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow hover:bg-white transition-all"
             aria-label="Favoritar"
           >
             <Heart className={cn('h-4 w-4 transition-all', favored ? 'fill-rose-500 text-rose-500' : 'text-slate-400')} />
@@ -139,7 +139,7 @@ export function PropertyCard({ imovel, animDelay = 0 }: PropertyCardProps) {
                   <p className="text-xs text-slate-400 font-medium mt-0.5">/mês</p>
                 )}
               </div>
-              <div className="h-8 w-8 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center group-hover:bg-orange-500 group-hover:border-orange-500 transition-all duration-300">
+              <div aria-hidden="true" role="presentation" className="h-8 w-8 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center group-hover:bg-orange-500 group-hover:border-orange-500 transition-all duration-300 pointer-events-none">
                 <svg className="h-3.5 w-3.5 text-orange-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
