@@ -52,6 +52,7 @@ app.use(
     maxAge: '1y',
     immutable: true,
     setHeaders: (res, filePath) => {
+      res.setHeader('Access-Control-Allow-Origin', '*')
       if (filePath.endsWith('.html')) {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
       }
