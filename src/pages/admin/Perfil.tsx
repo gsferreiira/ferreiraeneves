@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -64,15 +64,17 @@ export default function AdminPerfil() {
 
   // Quando os dados da tabela `usuarios` chegam, preenche o formulário
   // (fonte de verdade), desde que o usuário ainda não tenha digitado nada.
-  useEffect(() => {
-    if (!usuario || touched) return
+  // Ajuste de estado durante a render (padrão recomendado, sem useEffect).
+  const [seededId, setSeededId] = useState<string | null>(null)
+  if (usuario && !touched && seededId !== usuario.id) {
+    setSeededId(usuario.id)
     setForm(f => ({
       ...f,
       nome: usuario.nome ?? f.nome,
       telefone: usuario.telefone ?? f.telefone,
       foto_url: usuario.foto_url ?? f.foto_url,
     }))
-  }, [usuario, touched])
+  }
 
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm(f => ({ ...f, [k]: v }))

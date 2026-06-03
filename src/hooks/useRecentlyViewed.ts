@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 const KEY = 'fn_recently_viewed'
 const MAX = 6

@@ -29,12 +29,16 @@ export default function ImovelDetail() {
   const [copied, setCopied] = useState(false)
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_hora: '' })
   const [honeypot, setHoneypot] = useState('')
-  const formOpenAtRef = useRef(Date.now()).current
+  const formOpenAtRef = useRef(0)
   const touchStartX = useRef<number | null>(null)
   const { track } = useRecentlyViewed()
 
   const prev = useCallback((total: number) => setFotoIdx(i => (i - 1 + total) % total), [])
   const next = useCallback((total: number) => setFotoIdx(i => (i + 1) % total), [])
+
+  // Marca o instante de abertura do formulário (anti-spam) sem chamar
+  // Date.now() durante a render.
+  useEffect(() => { formOpenAtRef.current = Date.now() }, [])
 
   // Teclado: setas para navegar, Escape para fechar lightbox
   useEffect(() => {
@@ -66,7 +70,6 @@ export default function ImovelDetail() {
     if (!imovel) return
     track(imovel.id)
 
-    const addr = [imovel.rua, imovel.numero, imovel.bairro, imovel.cidade, imovel.estado].filter(Boolean).join(', ')
     const ld = {
       '@context': 'https://schema.org',
       '@type': 'RealEstateListing',
@@ -152,14 +155,17 @@ export default function ImovelDetail() {
     if (touchStartX.current === null) return
     const diff = touchStartX.current - e.changedTouches[0].clientX
     // Threshold de 60px evita fechamento acidental do lightbox em swipes curtos
-    if (Math.abs(diff) > 60) diff > 0 ? next(fotos.length) : prev(fotos.length)
+    if (Math.abs(diff) > 60) {
+      if (diff > 0) next(fotos.length)
+      else prev(fotos.length)
+    }
     touchStartX.current = null
   }
 
   async function handleAgendamento(e: React.FormEvent) {
     e.preventDefault()
     if (honeypot) return
-    if (Date.now() - formOpenAtRef < 1500) return
+    if (Date.now() - formOpenAtRef.current < 1500) return
     if (!form.nome || !form.telefone || !form.data_hora) {
       toast.error('Preencha nome, telefone e data/hora')
       return
