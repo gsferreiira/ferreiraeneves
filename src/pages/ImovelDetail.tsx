@@ -8,7 +8,7 @@ import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useImovel, useCreateAgendamento, useConfiguracoes, useImoveisSimilares } from '@/lib/queries'
+import { useImovel, useCreateAgendamento, useConfiguracoes, useImoveisSimilares, useCorretorPublico } from '@/lib/queries'
 import { PropertyCard } from '@/components/PropertyCard'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
@@ -20,6 +20,7 @@ export default function ImovelDetail() {
   const { id } = useParams<{ id: string }>()
   const { data: imovel, isLoading, error } = useImovel(id!)
   const { data: config } = useConfiguracoes()
+  const { data: corretor } = useCorretorPublico(imovel?.corretor_id ?? '')
   const { data: similares = [] } = useImoveisSimilares(id ?? '', imovel?.tipo_imovel ?? '', imovel?.cidade ?? '')
   const { isFavorite, toggle } = useFavorites()
   const createAgendamento = useCreateAgendamento()
@@ -28,12 +29,16 @@ export default function ImovelDetail() {
   const [copied, setCopied] = useState(false)
   const [form, setForm] = useState({ nome: '', telefone: '', email: '', data_hora: '' })
   const [honeypot, setHoneypot] = useState('')
-  const formOpenAtRef = useRef(Date.now()).current
+  const formOpenAtRef = useRef(0)
   const touchStartX = useRef<number | null>(null)
   const { track } = useRecentlyViewed()
 
   const prev = useCallback((total: number) => setFotoIdx(i => (i - 1 + total) % total), [])
   const next = useCallback((total: number) => setFotoIdx(i => (i + 1) % total), [])
+
+  // Marca o instante de abertura do formulário (anti-spam) sem chamar
+  // Date.now() durante a render.
+  useEffect(() => { formOpenAtRef.current = Date.now() }, [])
 
   // Teclado: setas para navegar, Escape para fechar lightbox
   useEffect(() => {
@@ -65,7 +70,6 @@ export default function ImovelDetail() {
     if (!imovel) return
     track(imovel.id)
 
-    const addr = [imovel.rua, imovel.numero, imovel.bairro, imovel.cidade, imovel.estado].filter(Boolean).join(', ')
     const ld = {
       '@context': 'https://schema.org',
       '@type': 'RealEstateListing',
@@ -128,6 +132,10 @@ export default function ImovelDetail() {
   const waMsg = encodeURIComponent(`Olá! Tenho interesse no imóvel "${imovel.titulo}"${imovel.codigo ? ` (Cód. ${imovel.codigo})` : ''}.`)
   const waUrl = `https://wa.me/55${whatsapp}?text=${waMsg}`
 
+  // Contato do corretor responsável (quando o imóvel tem um atrelado)
+  const corretorTel = corretor?.telefone?.replace(/\D/g, '') ?? ''
+  const corretorWaUrl = corretorTel ? `https://wa.me/55${corretorTel}?text=${waMsg}` : ''
+
   async function handleShare() {
     const url = window.location.href
     const title = imovel!.titulo
@@ -147,14 +155,17 @@ export default function ImovelDetail() {
     if (touchStartX.current === null) return
     const diff = touchStartX.current - e.changedTouches[0].clientX
     // Threshold de 60px evita fechamento acidental do lightbox em swipes curtos
-    if (Math.abs(diff) > 60) diff > 0 ? next(fotos.length) : prev(fotos.length)
+    if (Math.abs(diff) > 60) {
+      if (diff > 0) next(fotos.length)
+      else prev(fotos.length)
+    }
     touchStartX.current = null
   }
 
   async function handleAgendamento(e: React.FormEvent) {
     e.preventDefault()
     if (honeypot) return
-    if (Date.now() - formOpenAtRef < 1500) return
+    if (Date.now() - formOpenAtRef.current < 1500) return
     if (!form.nome || !form.telefone || !form.data_hora) {
       toast.error('Preencha nome, telefone e data/hora')
       return
@@ -346,41 +357,78 @@ export default function ImovelDetail() {
         {/* ── Sidebar ── */}
         <div className="md:col-span-1 order-last md:order-last space-y-4">
 
-          {/* Corretor */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-            <h2 className="font-heading font-bold text-slate-900 text-base flex items-center gap-2 mb-4">
-              <User className="h-4 w-4 text-orange-500" />
-              Fale com um Corretor
-            </h2>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shrink-0 shadow-sm shadow-orange-500/20">
-                {config?.logo_url
-                  ? <img src={config.logo_url} alt="Logo" className="w-full h-full object-cover rounded-xl" />
-                  : <span className="text-white font-extrabold text-lg font-heading">FN</span>
-                }
+          {/* Corretor responsável (se atrelado) ou equipe */}
+          {corretor ? (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h2 className="font-heading font-bold text-slate-900 text-base flex items-center gap-2 mb-4">
+                <User className="h-4 w-4 text-orange-500" />
+                Fale com o Corretor
+              </h2>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shrink-0 shadow-sm shadow-orange-500/20 overflow-hidden">
+                  {corretor.foto_url
+                    ? <img src={corretor.foto_url} alt={corretor.nome} className="w-full h-full object-cover" />
+                    : <span className="text-white font-extrabold text-lg font-heading">{corretor.nome.charAt(0).toUpperCase()}</span>
+                  }
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-900 text-sm">{corretor.nome}</p>
+                  <p className="text-xs text-slate-400">Corretor · {config?.nome_empresa ?? 'Ferreira & Neves'}</p>
+                </div>
               </div>
-              <div>
-                <p className="font-semibold text-slate-900 text-sm">{config?.nome_empresa ?? 'Ferreira & Neves'}</p>
-                {config?.creci && <p className="text-xs text-slate-400">CRECI {config.creci}</p>}
+              <div className="space-y-2">
+                {corretor.telefone && (
+                  <a href={`tel:${corretorTel}`}
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                    <Phone className="h-4 w-4 text-slate-400 shrink-0" />
+                    {corretor.telefone}
+                  </a>
+                )}
+                {corretorWaUrl && (
+                  <a href={corretorWaUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-bold hover:bg-[#20bd5a] transition-colors">
+                    <MessageCircle className="h-4 w-4 shrink-0" />
+                    Chamar no WhatsApp
+                  </a>
+                )}
               </div>
             </div>
-            <div className="space-y-2">
-              {config?.telefone && (
-                <a href={`tel:${config.telefone.replace(/\D/g, '')}`}
-                  className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                  <Phone className="h-4 w-4 text-slate-400 shrink-0" />
-                  {config.telefone}
-                </a>
-              )}
-              {whatsapp && (
-                <a href={waUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-bold hover:bg-[#20bd5a] transition-colors">
-                  <MessageCircle className="h-4 w-4 shrink-0" />
-                  Chamar no WhatsApp
-                </a>
-              )}
+          ) : (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h2 className="font-heading font-bold text-slate-900 text-base flex items-center gap-2 mb-4">
+                <User className="h-4 w-4 text-orange-500" />
+                Fale com um Corretor
+              </h2>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shrink-0 shadow-sm shadow-orange-500/20">
+                  {config?.logo_url
+                    ? <img src={config.logo_url} alt="Logo" className="w-full h-full object-cover rounded-xl" />
+                    : <span className="text-white font-extrabold text-lg font-heading">FN</span>
+                  }
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-900 text-sm">{config?.nome_empresa ?? 'Ferreira & Neves'}</p>
+                  {config?.creci && <p className="text-xs text-slate-400">CRECI {config.creci}</p>}
+                </div>
+              </div>
+              <div className="space-y-2">
+                {config?.telefone && (
+                  <a href={`tel:${config.telefone.replace(/\D/g, '')}`}
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                    <Phone className="h-4 w-4 text-slate-400 shrink-0" />
+                    {config.telefone}
+                  </a>
+                )}
+                {whatsapp && (
+                  <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-bold hover:bg-[#20bd5a] transition-colors">
+                    <MessageCircle className="h-4 w-4 shrink-0" />
+                    Chamar no WhatsApp
+                  </a>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Agendar visita */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">

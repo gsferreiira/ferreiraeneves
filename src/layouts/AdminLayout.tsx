@@ -7,7 +7,7 @@ import {
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
 import { useNotificacoes, type Notificacao } from '@/hooks/useNotificacoes'
-import { useAgendamentos } from '@/lib/queries'
+import { useAgendamentos, useUsuarioAtual } from '@/lib/queries'
 import { cn } from '@/lib/utils'
 
 const AVATAR_SIZES = { sm: 'h-8 w-8 text-sm', md: 'h-9 w-9 text-sm', lg: 'h-12 w-12 text-lg' } as const
@@ -63,13 +63,16 @@ export function AdminLayout() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [notificacoesOpen, setNotificacoesOpen] = useState(false)
   const { signOut, user } = useAuth()
+  const { data: usuario } = useUsuarioAtual()
   const notificacoes = useNotificacoes()
   const { data: agendamentos = [] } = useAgendamentos()
   const naoLidos = agendamentos.filter(a => !a.lido).length
 
   const meta = user?.user_metadata ?? {}
-  const nome = (meta.nome as string) || user?.email?.split('@')[0] || 'Admin'
-  const fotoUrl = meta.foto_url as string | undefined
+  // Prioriza a tabela `usuarios` (atualizada no perfil) sobre os metadados do Auth
+  const nome = usuario?.nome || (meta.nome as string) || user?.email?.split('@')[0] || 'Usuário'
+  const fotoUrl = (usuario?.foto_url ?? (meta.foto_url as string | undefined)) || undefined
+  const papel = usuario?.perfil === 'admin' ? 'Admin' : 'Corretor'
 
   const handleLogout = async () => {
     await signOut()
@@ -262,7 +265,7 @@ export function AdminLayout() {
               >
                 <div className="hidden md:block text-right">
                   <p className="text-sm font-bold text-slate-900 leading-none">{nome}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Admin</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{papel}</p>
                 </div>
                 <Avatar size="md" nome={nome} fotoUrl={fotoUrl} />
               </button>

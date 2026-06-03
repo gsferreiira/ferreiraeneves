@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase, IMOVEIS_BUCKET } from './supabase'
-import type { Imovel, Proprietario, Contrato, Agendamento, Configuracoes, ImovelFiltros, AuditLog, Artigo } from '@/types'
+import type { Imovel, Proprietario, Contrato, Agendamento, Configuracoes, ImovelFiltros, AuditLog, Artigo, Usuario, CorretorPublico } from '@/types'
 
 // ─── Imóveis ────────────────────────────────────────────────────────────────
 
@@ -231,6 +231,56 @@ export function useDeleteProprietario() {
   })
 }
 
+// ─── Corretores (equipe) ──────────────────────────────────────────────────────
+
+// Admin: lista de corretores/admins ativos para atrelar a um imóvel
+export function useCorretores() {
+  return useQuery({
+    queryKey: ['corretores'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('id, nome, perfil, foto_url, telefone')
+        .eq('status', 'ativo')
+        .order('nome')
+      if (error) throw error
+      return data as Pick<Usuario, 'id' | 'nome' | 'perfil' | 'foto_url' | 'telefone'>[]
+    },
+  })
+}
+
+// Usuário logado (linha da tabela `usuarios` — fonte de verdade do perfil)
+export function useUsuarioAtual() {
+  return useQuery({
+    queryKey: ['usuario-atual'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      const uid = session?.user?.id
+      if (!uid) return null
+      const { data, error } = await supabase.from('usuarios').select('*').eq('id', uid).maybeSingle()
+      if (error) throw error
+      return data as Usuario | null
+    },
+  })
+}
+
+// Público: dados de contato do corretor de um imóvel (view sem e-mail)
+export function useCorretorPublico(id: string) {
+  return useQuery({
+    queryKey: ['corretor-publico', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('corretores_publicos')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle()
+      if (error) throw error
+      return data as CorretorPublico | null
+    },
+    enabled: !!id,
+  })
+}
+
 // ─── Contratos ──────────────────────────────────────────────────────────────
 
 export function useContratos() {
@@ -366,9 +416,11 @@ export function useConfiguracoes() {
   return useQuery({
     queryKey: ['configuracoes'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('configuracoes').select('*').single()
+      // maybeSingle: retorna null em vez de erro 406 quando a linha não existe
+      // ou a policy de leitura pública ainda não foi aplicada.
+      const { data, error } = await supabase.from('configuracoes').select('*').maybeSingle()
       if (error) throw error
-      return data as Configuracoes
+      return data as Configuracoes | null
     },
   })
 }

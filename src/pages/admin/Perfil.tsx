@@ -1,10 +1,12 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   Camera, UserCircle, Mail, Key, Phone, Loader2, LogOut,
-  Save, CheckCircle2, Eye, EyeOff, Shield, Globe,
+  Save, CheckCircle2, Eye, EyeOff, Shield, ShieldCheck, Globe,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useUsuarioAtual } from '@/lib/queries'
 import { supabase, ASSETS_BUCKET } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -38,15 +40,19 @@ function FI({ icon: Icon, className = '', ...props }: React.InputHTMLAttributes<
 export default function AdminPerfil() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const { data: usuario } = useUsuarioAtual()
   const meta = user?.user_metadata ?? {}
+  const isAdmin = usuario?.perfil === 'admin'
 
   const [saving, setSaving] = useState(false)
   const [uploadingFoto, setUploadingFoto] = useState(false)
   const [saved, setSaved] = useState(false)
   const [showSenha, setShowSenha] = useState(false)
   const [showConfirmar, setShowConfirmar] = useState(false)
+  const [touched, setTouched] = useState(false)
 
   const [form, setForm] = useState({
     nome: (meta.nome as string) ?? '',
@@ -56,8 +62,23 @@ export default function AdminPerfil() {
     confirmarSenha: '',
   })
 
+  // Quando os dados da tabela `usuarios` chegam, preenche o formulário
+  // (fonte de verdade), desde que o usuário ainda não tenha digitado nada.
+  // Ajuste de estado durante a render (padrão recomendado, sem useEffect).
+  const [seededId, setSeededId] = useState<string | null>(null)
+  if (usuario && !touched && seededId !== usuario.id) {
+    setSeededId(usuario.id)
+    setForm(f => ({
+      ...f,
+      nome: usuario.nome ?? f.nome,
+      telefone: usuario.telefone ?? f.telefone,
+      foto_url: usuario.foto_url ?? f.foto_url,
+    }))
+  }
+
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm(f => ({ ...f, [k]: v }))
+    setTouched(true)
     setSaved(false)
   }
 
@@ -103,19 +124,32 @@ export default function AdminPerfil() {
 
     setSaving(true)
     try {
-      const updates: Parameters<typeof supabase.auth.updateUser>[0] = {
-        data: {
-          nome: form.nome.trim(),
-          telefone: form.telefone.trim(),
-          foto_url: form.foto_url,
-        },
+      const dados = {
+        nome: form.nome.trim(),
+        telefone: form.telefone.trim() || null,
+        foto_url: form.foto_url || null,
       }
-      if (form.novaSenha) updates.password = form.novaSenha
 
-      const { error } = await supabase.auth.updateUser(updates)
-      if (error) throw error
+      // 1. Atualiza Auth (metadados + senha, quando informada)
+      const updates: Parameters<typeof supabase.auth.updateUser>[0] = { data: dados }
+      if (form.novaSenha) updates.password = form.novaSenha
+      const { error: authError } = await supabase.auth.updateUser(updates)
+      if (authError) throw authError
+
+      // 2. Atualiza a tabela `usuarios` — fonte de verdade da Equipe e do
+      //    card de corretor no site (não depende do trigger de sincronia).
+      if (user?.id) {
+        const { error: dbError } = await supabase.from('usuarios').update(dados).eq('id', user.id)
+        if (dbError) throw dbError
+      }
+
+      // Atualiza dados exibidos no painel e no site sem recarregar
+      queryClient.invalidateQueries({ queryKey: ['usuario-atual'] })
+      queryClient.invalidateQueries({ queryKey: ['corretores'] })
+      queryClient.invalidateQueries({ queryKey: ['corretor-publico'] })
 
       setSaved(true)
+      setTouched(false)
       setForm(f => ({ ...f, novaSenha: '', confirmarSenha: '' }))
       toast.success('Perfil atualizado com sucesso!')
     } catch (err) {
@@ -145,7 +179,21 @@ export default function AdminPerfil() {
       </div>
 
       {/* Card avatar */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden relative">
+        {/* Badge de papel (Admin/Corretor) — canto superior direito */}
+        <div className={cn(
+          'absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-xl border backdrop-blur-sm',
+          isAdmin ? 'bg-orange-500/90 border-orange-400' : 'bg-white/90 border-slate-200',
+        )}>
+          {isAdmin
+            ? <ShieldCheck className="h-3.5 w-3.5 text-white" />
+            : <Shield className="h-3.5 w-3.5 text-slate-500" />
+          }
+          <span className={cn('text-xs font-bold uppercase tracking-wide', isAdmin ? 'text-white' : 'text-slate-600')}>
+            {isAdmin ? 'Admin' : 'Corretor'}
+          </span>
+        </div>
+
         {/* Banner */}
         <div className="h-24 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 relative">
           <div className="absolute inset-0 opacity-20"
@@ -185,7 +233,7 @@ export default function AdminPerfil() {
 
             <div className="flex-1 min-w-0">
               <h2 className="text-xl font-heading font-extrabold text-slate-900 truncate">
-                {form.nome || 'Administrador'}
+                {form.nome || user?.email?.split('@')[0] || 'Usuário'}
               </h2>
               <p className="text-sm text-slate-500 truncate">{user?.email}</p>
               <button
@@ -195,11 +243,6 @@ export default function AdminPerfil() {
               >
                 {uploadingFoto ? 'Enviando...' : 'Trocar foto de perfil'}
               </button>
-            </div>
-
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-100">
-              <Shield className="h-3.5 w-3.5 text-orange-500" />
-              <span className="text-xs font-bold text-orange-700 uppercase tracking-wide">Admin</span>
             </div>
           </div>
         </div>

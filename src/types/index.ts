@@ -36,7 +36,17 @@ export interface Imovel {
   caracteristicas: string[]
   proprietario_id: string | null
   proprietario?: Proprietario
+  corretor_id: string | null
+  corretor?: CorretorPublico
   created_at: string
+}
+
+// Dados públicos de contato do corretor (view corretores_publicos — sem e-mail)
+export interface CorretorPublico {
+  id: string
+  nome: string
+  foto_url: string | null
+  telefone: string | null
 }
 
 export interface Artigo {

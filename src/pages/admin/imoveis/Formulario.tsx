@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PhotoUploader } from '@/components/PhotoUploader'
-import { useImovel, useCreateImovel, useUpdateImovel, useProprietarios } from '@/lib/queries'
+import { useImovel, useCreateImovel, useUpdateImovel, useProprietarios, useCorretores } from '@/lib/queries'
 import { generateCodigo } from '@/lib/utils'
 import { CARACTERISTICAS_OPCOES } from '@/types'
 import { toast } from 'sonner'
@@ -49,6 +49,7 @@ const schema = z.object({
   status: z.enum(['disponivel', 'alugado', 'vendido', 'inativo']).default('disponivel'),
   video_url: z.string().optional(),
   proprietario_id: z.string().nullable().optional(),
+  corretor_id: z.string().nullable().optional(),
   fotos: z.array(z.string()).default([]),
   caracteristicas: z.array(z.string()).default([]),
 })
@@ -128,6 +129,7 @@ export default function AdminImoveisFormulario() {
 
   const { data: imovel, isLoading: loadingImovel } = useImovel(id ?? '')
   const { data: proprietarios = [] } = useProprietarios()
+  const { data: corretores = [] } = useCorretores()
   const createImovel = useCreateImovel()
   const updateImovel = useUpdateImovel()
 
@@ -164,6 +166,7 @@ export default function AdminImoveisFormulario() {
         status: 'disponivel',
         video_url: (d.video_url as string) ?? undefined,
         proprietario_id: (d.proprietario_id as string) ?? undefined,
+        corretor_id: (d.corretor_id as string) ?? undefined,
         fotos: [],
       })
     }
@@ -181,6 +184,7 @@ export default function AdminImoveisFormulario() {
         cep: imovel.cep ?? undefined,
         video_url: imovel.video_url ?? undefined,
         proprietario_id: imovel.proprietario_id ?? undefined,
+        corretor_id: imovel.corretor_id ?? undefined,
         area_construida: imovel.area_construida ?? undefined,
         area_total: imovel.area_total ?? undefined,
         preco_venda: imovel.preco_venda ?? undefined,
@@ -239,6 +243,7 @@ export default function AdminImoveisFormulario() {
       cep: data.cep || null,
       video_url: data.video_url || null,
       proprietario_id: data.proprietario_id || null,
+      corretor_id: data.corretor_id || null,
       area_construida: data.area_construida ?? null,
       area_total: data.area_total ?? null,
       preco_venda: data.preco_venda ?? null,
@@ -383,7 +388,7 @@ export default function AdminImoveisFormulario() {
             </div>
           </div>
 
-          {/* Proprietário */}
+          {/* Proprietário + Corretor */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <FieldLabel>Proprietário</FieldLabel>
@@ -391,6 +396,15 @@ export default function AdminImoveisFormulario() {
                 <FieldSelect value={field.value ?? 'nenhum'} onValueChange={v => field.onChange(v === 'nenhum' ? null : v)}>
                   <SelectItem value="nenhum">Nenhum</SelectItem>
                   {proprietarios.map(p => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+                </FieldSelect>
+              )} />
+            </div>
+            <div>
+              <FieldLabel>Corretor responsável</FieldLabel>
+              <Controller name="corretor_id" control={control} render={({ field }) => (
+                <FieldSelect value={field.value ?? 'nenhum'} onValueChange={v => field.onChange(v === 'nenhum' ? null : v)}>
+                  <SelectItem value="nenhum">Equipe Ferreira &amp; Neves</SelectItem>
+                  {corretores.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
                 </FieldSelect>
               )} />
             </div>
