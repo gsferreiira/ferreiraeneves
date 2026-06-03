@@ -8,7 +8,7 @@ import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useImovel, useCreateAgendamento, useConfiguracoes, useImoveisSimilares, useCorretorPublico } from '@/lib/queries'
+import { useImovel, useCreateAgendamento, useConfiguracoes, useImoveisSimilares, useCorretorPublico, incrementarVisualizacao } from '@/lib/queries'
 import { PropertyCard } from '@/components/PropertyCard'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
@@ -69,6 +69,7 @@ export default function ImovelDetail() {
   useEffect(() => {
     if (!imovel) return
     track(imovel.id)
+    incrementarVisualizacao(imovel.id)
 
     const ld = {
       '@context': 'https://schema.org',

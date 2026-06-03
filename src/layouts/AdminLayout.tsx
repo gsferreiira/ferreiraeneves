@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Home, FileText, UserCheck, CalendarDays,
@@ -8,6 +8,8 @@ import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
 import { useNotificacoes, type Notificacao } from '@/hooks/useNotificacoes'
 import { useAgendamentos, useUsuarioAtual } from '@/lib/queries'
+import { supabase } from '@/lib/supabase'
+import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 
 const AVATAR_SIZES = { sm: 'h-8 w-8 text-sm', md: 'h-9 w-9 text-sm', lg: 'h-12 w-12 text-lg' } as const
@@ -67,6 +69,20 @@ export function AdminLayout() {
   const notificacoes = useNotificacoes()
   const { data: agendamentos = [] } = useAgendamentos()
   const naoLidos = agendamentos.filter(a => !a.lido).length
+  const qc = useQueryClient()
+
+  // Realtime — recebe novos agendamentos em tempo real
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-agendamentos-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'agendamentos' }, payload => {
+        qc.invalidateQueries({ queryKey: ['agendamentos'] })
+        const nome = (payload.new as { nome_cliente?: string }).nome_cliente ?? 'Novo cliente'
+        toast.info(`📅 Novo agendamento: ${nome}`, { duration: 6000 })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [qc])
 
   const meta = user?.user_metadata ?? {}
   // Prioriza a tabela `usuarios` (atualizada no perfil) sobre os metadados do Auth

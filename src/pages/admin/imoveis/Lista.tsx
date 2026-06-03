@@ -149,6 +149,7 @@ export default function AdminImoveisLista() {
                   <th className="text-left px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">Imóvel</th>
                   <th className="text-left px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider hidden md:table-cell">Tipo</th>
                   <th className="text-left px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider hidden sm:table-cell">Preço</th>
+                  <th className="text-left px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider hidden lg:table-cell">Visitas</th>
                   <th className="text-left px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">Status</th>
                   <th className="text-right px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">Ações</th>
                 </tr>
@@ -186,6 +187,12 @@ export default function AdminImoveisLista() {
                           : imovel.preco_locacao
                           ? `${formatCurrency(imovel.preco_locacao)}/mês`
                           : '—'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 hidden lg:table-cell">
+                      <span className="flex items-center gap-1.5 text-slate-500 text-sm font-medium">
+                        <Eye className="h-3.5 w-3.5 text-slate-300" />
+                        {(imovel.visualizacoes ?? 0).toLocaleString('pt-BR')}
                       </span>
                     </td>
                     <td className="px-5 py-4">
