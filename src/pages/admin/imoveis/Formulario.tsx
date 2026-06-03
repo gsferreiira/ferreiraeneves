@@ -126,21 +126,9 @@ export default function AdminImoveisFormulario() {
   const { state } = window.history
   const duplicarDe = (state as { usr?: { duplicarDe?: Record<string, unknown> } })?.usr?.duplicarDe
   const [activeTab, setActiveTab] = useState<Tab>('geral')
+  const [formReady, setFormReady] = useState(!isEditing)
 
   const { data: imovel, isLoading: loadingImovel } = useImovel(id ?? '')
-
-  // Bloqueia a renderização do formulário em modo edição até os dados chegarem.
-  // Sem isso, o RHF renderiza com defaultValues (status: 'disponivel') e o usuário
-  // interage com valores errados antes do reset() ser chamado.
-  if (isEditing && (loadingImovel || !imovel)) {
-    return (
-      <div className="max-w-4xl space-y-4 pb-10 animate-pulse">
-        <div className="h-10 w-48 bg-slate-100 rounded-xl" />
-        <div className="h-64 bg-slate-100 rounded-2xl" />
-        <div className="h-48 bg-slate-100 rounded-2xl" />
-      </div>
-    )
-  }
   const { data: proprietarios = [] } = useProprietarios()
   const { data: corretores = [] } = useCorretores()
   const createImovel = useCreateImovel()
@@ -210,6 +198,7 @@ export default function AdminImoveisFormulario() {
         fotos: imovel.fotos ?? [],
         caracteristicas: imovel.caracteristicas ?? [],
       })
+      setFormReady(true)
     }
   }, [imovel, reset])
 
@@ -282,7 +271,7 @@ export default function AdminImoveisFormulario() {
     }
   }
 
-  if (isEditing && loadingImovel) {
+  if (isEditing && (loadingImovel || !formReady)) {
     return (
       <div className="max-w-4xl mx-auto space-y-4">
         <div className="h-16 bg-slate-100 rounded-2xl animate-pulse" />
