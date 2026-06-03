@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { PublicHeader } from '@/components/PublicHeader'
 import { PublicFooter } from '@/components/PublicFooter'
+import { WhatsAppFloat } from '@/components/WhatsAppFloat'
 
 export function PublicLayout() {
   const { pathname } = useLocation()
@@ -18,6 +19,7 @@ export function PublicLayout() {
         <Outlet />
       </main>
       <PublicFooter />
+      <WhatsAppFloat />
     </div>
   )
 }
