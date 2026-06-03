@@ -489,6 +489,10 @@ export function useDashboardStats() {
 
 // ─── Imóveis Similares ───────────────────────────────────────────────────────
 
+export async function incrementarVisualizacao(id: string): Promise<void> {
+  await supabase.rpc('incrementar_visualizacao', { p_id: id })
+}
+
 export function useImoveisSimilares(imovelId: string, tipoImovel: string, cidade: string) {
   return useQuery({
     queryKey: ['imoveis-similares', imovelId, tipoImovel, cidade],

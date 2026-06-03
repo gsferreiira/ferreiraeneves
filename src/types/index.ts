@@ -38,6 +38,7 @@ export interface Imovel {
   proprietario?: Proprietario
   corretor_id: string | null
   corretor?: CorretorPublico
+  visualizacoes: number
   created_at: string
 }
 
