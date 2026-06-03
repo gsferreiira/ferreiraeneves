@@ -137,7 +137,11 @@ export function useUpdateImovel() {
       if (error) throw error
       return data as Imovel
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['imoveis'] }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['imoveis'] })
+      // Invalida também o cache da query individual para o formulário de edição
+      qc.invalidateQueries({ queryKey: ['imovel', data.id] })
+    },
   })
 }
 

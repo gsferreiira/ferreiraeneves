@@ -128,6 +128,19 @@ export default function AdminImoveisFormulario() {
   const [activeTab, setActiveTab] = useState<Tab>('geral')
 
   const { data: imovel, isLoading: loadingImovel } = useImovel(id ?? '')
+
+  // Bloqueia a renderização do formulário em modo edição até os dados chegarem.
+  // Sem isso, o RHF renderiza com defaultValues (status: 'disponivel') e o usuário
+  // interage com valores errados antes do reset() ser chamado.
+  if (isEditing && (loadingImovel || !imovel)) {
+    return (
+      <div className="max-w-4xl space-y-4 pb-10 animate-pulse">
+        <div className="h-10 w-48 bg-slate-100 rounded-xl" />
+        <div className="h-64 bg-slate-100 rounded-2xl" />
+        <div className="h-48 bg-slate-100 rounded-2xl" />
+      </div>
+    )
+  }
   const { data: proprietarios = [] } = useProprietarios()
   const { data: corretores = [] } = useCorretores()
   const createImovel = useCreateImovel()
@@ -176,6 +189,11 @@ export default function AdminImoveisFormulario() {
     if (imovel) {
       reset({
         ...imovel,
+        // Explícito para garantir que o RHF sempre receba o valor correto do banco
+        status: imovel.status,
+        tipo_negocio: imovel.tipo_negocio,
+        tipo_imovel: imovel.tipo_imovel,
+        destaque: imovel.destaque,
         descricao: imovel.descricao ?? undefined,
         rua: imovel.rua ?? undefined,
         numero: imovel.numero ?? undefined,
